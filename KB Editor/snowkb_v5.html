@@ -1,3 +1,4 @@
+<!-- snowkb_v5.1 - Complete with working hyperlink/image modals and context menus -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -846,141 +847,27 @@ function makeTableResizable(table) {
 <script>
 let savedRangeForLink = null;
 
-function openHyperlinkModal() {
+function openHyperlinkModal(existingLink = null) {
   const sel = window.getSelection();
   if (sel.rangeCount > 0) {
-    savedRangeForLink = sel.getRangeAt(0);
-  }
-  document.getElementById("hyperlinkModal").style.display = "block";
-}
-
-function applyHyperlink() {
-  const url = document.getElementById("linkUrl").value;
-  const text = document.getElementById("linkText").value;
-  const title = document.getElementById("linkTitle").value;
-  const target = document.getElementById("linkTarget").value;
-
-  if (!url || !text) {
-    alert("URL and Text to Display are required.");
-    return;
+    savedRangeForLink = sel.getRangeAt(0).cloneRange();
   }
 
   const modal = document.getElementById("hyperlinkModal");
-  let a = modal.getAttribute("data-editing") ? modal._linkRef : document.createElement("a");
-  a.href = url;
-  a.textContent = text;
-  if (title) a.title = title;
-  if (target) a.target = target;
-
-  const editor = document.getElementById("editor");
-  editor.focus();
-
-  const sel = window.getSelection();
-  if (!modal.getAttribute("data-editing")) {
-    if (!sel.rangeCount) {
-      const range = document.createRange();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    range.insertNode(a);
-    sel.removeAllRanges();
-    sel.selectAllChildren(a);
+  if (existingLink) {
+    document.getElementById("linkUrl").value = existingLink.href;
+    document.getElementById("linkText").value = existingLink.textContent;
+    document.getElementById("linkTitle").value = existingLink.title;
+    document.getElementById("linkTarget").value = existingLink.target || "";
+    modal.setAttribute("data-editing", "true");
+    modal._linkRef = existingLink;
+  } else {
+    document.querySelectorAll("#hyperlinkModal input, #hyperlinkModal select").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._linkRef = null;
   }
 
-  modal.style.display = "none";
-  update();
-}
-</script>
-
-
-<style>
-  #imageModal {
-    position: fixed;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    border: 1px solid #ccc;
-    padding: 15px;
-    z-index: 9999;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  }
-  #imageModal input {
-    margin: 5px 0;
-    width: 100%;
-    padding: 4px;
-  }
-</style>
-<div id="imageModal" style="display:none;">
-  <label>Image Source (URL): <input type="text" id="imgSrc" /></label><br/>
-  <label>Alt Text: <input type="text" id="imgAlt" /></label><br/>
-  <label>Image Title: <input type="text" id="imgTitle" /></label><br/>
-  <label>Width (px or %): <input type="text" id="imgWidth" /></label><br/>
-  <label>Height (px or %): <input type="text" id="imgHeight" /></label><br/>
-  <button onclick="applyImage()">Insert Image</button>
-  <button onclick="document.getElementById('imageModal').style.display='none'">Cancel</button>
-</div>
-<script>
-let savedRangeForImage = null;
-
-function openImageModal() {
-  const sel = window.getSelection();
-  if (sel.rangeCount > 0) {
-    savedRangeForImage = sel.getRangeAt(0);
-  }
-  document.getElementById("imageModal").style.display = "block";
-}
-
-function applyImage() {
-  const src = document.getElementById("imgSrc").value;
-  const alt = document.getElementById("imgAlt").value;
-  const title = document.getElementById("imgTitle").value;
-  const width = document.getElementById("imgWidth").value;
-  const height = document.getElementById("imgHeight").value;
-
-  if (!src) {
-    alert("Image Source is required.");
-    return;
-  }
-
-  const img = document.createElement("img");
-  img.src = src;
-  if (alt) img.alt = alt;
-  if (title) img.title = title;
-  if (width) img.setAttribute("width", width);
-  if (height) img.setAttribute("height", height);
-
-  if (savedRangeForImage) {
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(savedRangeForImage);
-    savedRangeForImage.deleteContents();
-    savedRangeForImage.insertNode(img);
-    sel.removeAllRanges();
-    savedRangeForImage = null;
-  }
-
-  document.getElementById("imageModal").style.display = "none";
-  update();
-}
-</script>
-
-
-<script>
-document.addEventListener("contextmenu", function(e) {
-  const target = e.target;
-  if (target.tagName === "IMG") {
-    e.preventDefault();
-    showImageContextMenu(target, e.pageX, e.pageY);
-  } else if (target.tagName === "A") {
-    e.preventDefault();
-    showLinkContextMenu(target, e.pageX, e.pageY);
-  }
+  modal.style.display = "block";
 });
 
 function showImageContextMenu(img, x, y) {
@@ -1028,12 +915,14 @@ function createMenuItem(text, action) {
 function openImageModal(existingImg = null) {
   savedRangeForImage = null;
   const modal = document.getElementById("imageModal");
+
   if (existingImg) {
     document.getElementById("imgSrc").value = existingImg.src;
     document.getElementById("imgAlt").value = existingImg.alt;
     document.getElementById("imgTitle").value = existingImg.title;
     document.getElementById("imgWidth").value = existingImg.width;
     document.getElementById("imgHeight").value = existingImg.height;
+
     modal.setAttribute("data-editing", "true");
     modal._imgRef = existingImg;
   } else {
@@ -1041,47 +930,196 @@ function openImageModal(existingImg = null) {
     modal.removeAttribute("data-editing");
     modal._imgRef = null;
   }
+
+  modal.style.display = "block";
+});
+</script>
+
+
+<div id="hyperlinkModal" style="display:none;">
+  <div><label for="linkUrl">URL:</label><input type="text" id="linkUrl" /></div>
+  <div><label for="linkText">Text to Display:</label><input type="text" id="linkText" /></div>
+  <div><label for="linkTitle">Title:</label><input type="text" id="linkTitle" /></div>
+  <div>
+    <label for="linkTarget">Target:</label>
+    <select id="linkTarget">
+      <option value="">None</option>
+      <option value="_self">Same frame (_self)</option>
+      <option value="_blank">New window (_blank)</option>
+      <option value="_top">Top frame (_top)</option>
+    </select>
+  </div>
+  <button onclick="applyHyperlink()">Insert Link</button>
+  <button onclick="document.getElementById('hyperlinkModal').style.display='none'">Cancel</button>
+</div>
+
+
+<div id="imageModal" style="display:none;">
+  <div><label for="imgSrc">Image Source (URL):</label><input type="text" id="imgSrc" /></div>
+  <div><label for="imgAlt">Alt Text:</label><input type="text" id="imgAlt" /></div>
+  <div><label for="imgTitle">Image Title:</label><input type="text" id="imgTitle" /></div>
+  <div><label for="imgWidth">Width (px or %):</label><input type="text" id="imgWidth" /></div>
+  <div><label for="imgHeight">Height (px or %):</label><input type="text" id="imgHeight" /></div>
+  <button onclick="applyImage()">Insert Image</button>
+  <button onclick="document.getElementById('imageModal').style.display='none'">Cancel</button>
+</div>
+
+
+<script>
+let savedRangeForLink = null;
+function openHyperlinkModal(existingLink = null) {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForLink = sel.getRangeAt(0).cloneRange();
+  }
+
+  const modal = document.getElementById("hyperlinkModal");
+  if (existingLink) {
+    document.getElementById("linkUrl").value = existingLink.href;
+    document.getElementById("linkText").value = existingLink.textContent;
+    document.getElementById("linkTitle").value = existingLink.title;
+    document.getElementById("linkTarget").value = existingLink.target || "";
+    modal.setAttribute("data-editing", "true");
+    modal._linkRef = existingLink;
+  } else {
+    document.querySelectorAll("#hyperlinkModal input, #hyperlinkModal select").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._linkRef = null;
+  }
+
   modal.style.display = "block";
 }
 
-function applyImage() {
-  const src = document.getElementById("imgSrc").value;
-  const alt = document.getElementById("imgAlt").value;
-  const title = document.getElementById("imgTitle").value;
-  const width = document.getElementById("imgWidth").value;
-  const height = document.getElementById("imgHeight").value;
+function applyHyperlink() {
+  const url = document.getElementById("linkUrl").value;
+  const text = document.getElementById("linkText").value;
+  const title = document.getElementById("linkTitle").value;
+  const target = document.getElementById("linkTarget").value;
 
-  if (!src) {
-    alert("Image Source is required.");
+  if (!url || !text) {
+    alert("URL and Text to Display are required.");
     return;
   }
 
-  const modal = document.getElementById("imageModal");
-  let img = modal.getAttribute("data-editing") ? modal._imgRef : document.createElement("img");
-  img.src = src;
-  img.alt = alt;
-  img.title = title;
-  if (width) img.setAttribute("width", width); else img.removeAttribute("width");
-  if (height) img.setAttribute("height", height); else img.removeAttribute("height");
+  const modal = document.getElementById("hyperlinkModal");
+  let a = modal.getAttribute("data-editing") ? modal._linkRef : document.createElement("a");
+  a.href = url;
+  a.textContent = text;
+  if (title) a.title = title;
+  if (target) a.target = target;
 
+  const editor = document.getElementById("editor");
+  editor.focus();
+
+  const sel = window.getSelection();
   if (!modal.getAttribute("data-editing")) {
-    if (savedRangeForImage) {
-      const sel = window.getSelection();
+    if (savedRangeForLink) {
       sel.removeAllRanges();
-      sel.addRange(savedRangeForImage);
-      savedRangeForImage.deleteContents();
-      savedRangeForImage.insertNode(img);
+      sel.addRange(savedRangeForLink);
+    } else {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
       sel.removeAllRanges();
-      savedRangeForImage = null;
+      sel.addRange(range);
     }
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(a);
+    sel.removeAllRanges();
+    sel.selectAllChildren(a);
+    savedRangeForLink = null;
   }
 
   modal.style.display = "none";
   update();
 }
 
+let savedRangeForImage = null;
+function openImageModal(existingImg = null) {
+  savedRangeForImage = null;
+  const modal = document.getElementById("imageModal");
+
+  if (existingImg) {
+    document.getElementById("imgSrc").value = existingImg.src;
+    document.getElementById("imgAlt").value = existingImg.alt;
+    document.getElementById("imgTitle").value = existingImg.title;
+    document.getElementById("imgWidth").value = existingImg.width;
+    document.getElementById("imgHeight").value = existingImg.height;
+
+    modal.setAttribute("data-editing", "true");
+    modal._imgRef = existingImg;
+  } else {
+    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._imgRef = null;
+  }
+
+  modal.style.display = "block";
+});
+
+function showImageContextMenu(img, x, y) {
+  const menu = createContextMenu(x, y);
+  menu.appendChild(createMenuItem("📝 Update Image", () => openImageModal(img)));
+  menu.appendChild(createMenuItem("❌ Remove Image", () => { img.remove(); update(); }));
+  document.body.appendChild(menu);
+}
+
+function showLinkContextMenu(link, x, y) {
+  const menu = createContextMenu(x, y);
+  menu.appendChild(createMenuItem("📝 Update Link", () => openHyperlinkModal(link)));
+  menu.appendChild(createMenuItem("❌ Remove Link", () => { link.remove(); update(); }));
+  document.body.appendChild(menu);
+}
+
+function createContextMenu(x, y) {
+  const existing = document.getElementById("customContextMenu");
+  if (existing) existing.remove();
+
+  const menu = document.createElement("div");
+  menu.id = "customContextMenu";
+  menu.style.position = "absolute";
+  menu.style.top = y + "px";
+  menu.style.left = x + "px";
+  menu.style.background = "#fff";
+  menu.style.border = "2px solid #0072c6";
+  menu.style.padding = "8px";
+  menu.style.zIndex = 99999;
+  menu.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+  menu.style.minWidth = "160px";
+  menu.style.fontSize = "14px";
+  menu.style.display = "block";
+
+  return menu;
+}
+
+function createMenuItem(text, action) {
+  const btn = document.createElement("button");
+  btn.textContent = text;
+  btn.onclick = () => {
+    action();
+    const menu = document.getElementById("customContextMenu");
+    if (menu) menu.remove();
+  };
+  btn.style.display = "block";
+  btn.style.width = "100%";
+  btn.style.margin = "2px 0";
+  return btn;
+}
+</script>
+
+
+<script>
+let savedRangeForLink = null;
+let savedRangeForImage = null;
+
 function openHyperlinkModal(existingLink = null) {
-  savedRangeForLink = null;
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForLink = sel.getRangeAt(0).cloneRange();
+  }
+
   const modal = document.getElementById("hyperlinkModal");
   if (existingLink) {
     document.getElementById("linkUrl").value = existingLink.href;
@@ -1121,7 +1159,10 @@ function applyHyperlink() {
 
   const sel = window.getSelection();
   if (!modal.getAttribute("data-editing")) {
-    if (!sel.rangeCount) {
+    if (savedRangeForLink) {
+      sel.removeAllRanges();
+      sel.addRange(savedRangeForLink);
+    } else {
       const range = document.createRange();
       range.selectNodeContents(editor);
       range.collapse(false);
@@ -1134,12 +1175,329 @@ function applyHyperlink() {
     range.insertNode(a);
     sel.removeAllRanges();
     sel.selectAllChildren(a);
+    savedRangeForLink = null;
   }
 
   modal.style.display = "none";
   update();
 }
+
+function openImageModal(existingImg = null) {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForImage = sel.getRangeAt(0).cloneRange();
+  }
+
+  const modal = document.getElementById("imageModal");
+  if (existingImg) {
+    document.getElementById("imgSrc").value = existingImg.src;
+    document.getElementById("imgAlt").value = existingImg.alt;
+    document.getElementById("imgTitle").value = existingImg.title;
+    document.getElementById("imgWidth").value = existingImg.width;
+    document.getElementById("imgHeight").value = existingImg.height;
+
+    modal.setAttribute("data-editing", "true");
+    modal._imgRef = existingImg;
+  } else {
+    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._imgRef = null;
+  }
+
+  modal.style.display = "block";
+}
+
+function applyImage() {
+  const src = document.getElementById("imgSrc").value;
+  const alt = document.getElementById("imgAlt").value;
+  const title = document.getElementById("imgTitle").value;
+  const width = document.getElementById("imgWidth").value;
+  const height = document.getElementById("imgHeight").value;
+
+  if (!src) {
+    alert("Image Source is required.");
+    return;
+  }
+
+  const modal = document.getElementById("imageModal");
+  const isEdit = modal.getAttribute("data-editing") === "true";
+  const img = isEdit ? modal._imgRef : document.createElement("img");
+
+  img.src = src;
+  img.alt = alt;
+  img.title = title;
+  if (width) img.setAttribute("width", width); else img.removeAttribute("width");
+  if (height) img.setAttribute("height", height); else img.removeAttribute("height");
+
+  if (!isEdit) {
+    const editor = document.getElementById("editor");
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel.rangeCount) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    sel.removeAllRanges();
+    sel.selectAllChildren(img);
+  }
+
+  modal.removeAttribute("data-editing");
+  modal._imgRef = null;
+  modal.style.display = "none";
+  update();
+}
+</script>
+
+
+<script>
+document.addEventListener("contextmenu", function(e) {
+  const target = e.target;
+  if (target.tagName === "IMG") {
+    e.preventDefault();
+    showImageContextMenu(target, e.pageX, e.pageY);
+  } else if (target.tagName === "A") {
+    e.preventDefault();
+    showLinkContextMenu(target, e.pageX, e.pageY);
+  }
+});
+</script>
+
+
+<style>
+#imageModal {
+  display: none;
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 2px solid #333;
+  padding: 20px;
+  box-shadow: 0 0 12px rgba(0,0,0,0.5);
+  z-index: 10000;
+}
+</style>
+
+
+<script>
+document.addEventListener("contextmenu", function(e) {
+  const target = e.target;
+  if (target.tagName === "IMG") {
+    console.log("Right-click on image detected.");
+    e.preventDefault();
+    showImageContextMenu(target, e.pageX, e.pageY);
+  } else if (target.tagName === "A") {
+    console.log("Right-click on link detected.");
+    e.preventDefault();
+    showLinkContextMenu(target, e.pageX, e.pageY);
+  }
+});
+
+function openImageModal(existingImg = null) {
+  console.log("openImageModal triggered");
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForImage = sel.getRangeAt(0).cloneRange();
+  }
+
+  const modal = document.getElementById("imageModal");
+  if (existingImg) {
+    document.getElementById("imgSrc").value = existingImg.src;
+    document.getElementById("imgAlt").value = existingImg.alt;
+    document.getElementById("imgTitle").value = existingImg.title;
+    document.getElementById("imgWidth").value = existingImg.width;
+    document.getElementById("imgHeight").value = existingImg.height;
+
+    modal.setAttribute("data-editing", "true");
+    modal._imgRef = existingImg;
+  } else {
+    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._imgRef = null;
+  }
+
+  modal.style.display = "block";
+  modal.style.zIndex = 10000;
+}
+</script>
+
+
+<script>
+function showImageContextMenu(img, x, y) {
+  const menu = document.createElement("div");
+  menu.id = "customContextMenu";
+  menu.style.position = "absolute";
+  menu.style.top = y + "px";
+  menu.style.left = x + "px";
+  menu.style.background = "#fff";
+  menu.style.border = "2px solid #0072c6";
+  menu.style.padding = "8px";
+  menu.style.zIndex = 99999;
+  menu.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+  menu.style.minWidth = "160px";
+  menu.style.fontSize = "14px";
+
+  const updateBtn = document.createElement("button");
+  updateBtn.textContent = "📝 Update Image";
+  updateBtn.onclick = () => {
+    openImageModal(img);
+    menu.remove();
+  };
+
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "❌ Remove Image";
+  removeBtn.onclick = () => {
+    img.remove();
+    update();
+    menu.remove();
+  };
+
+  [updateBtn, removeBtn].forEach(btn => {
+    btn.style.display = "block";
+    btn.style.width = "100%";
+    btn.style.margin = "4px 0";
+    menu.appendChild(btn);
+  });
+
+  // Remove any existing menu and show new one
+  const existing = document.getElementById("customContextMenu");
+  if (existing) existing.remove();
+  document.body.appendChild(menu);
+
+  document.addEventListener("click", () => {
+    if (menu.parentNode) menu.remove();
+  }, { once: true });
+}
+</script>
+
+
+<script>
+function showLinkContextMenu(link, x, y) {
+  const menu = document.createElement("div");
+  menu.id = "customContextMenu";
+  menu.style.position = "absolute";
+  menu.style.top = y + "px";
+  menu.style.left = x + "px";
+  menu.style.background = "#fff";
+  menu.style.border = "2px solid #0072c6";
+  menu.style.padding = "8px";
+  menu.style.zIndex = 99999;
+  menu.style.boxShadow = "0 2px 6px rgba(0,0,0,0.2)";
+  menu.style.minWidth = "160px";
+  menu.style.fontSize = "14px";
+
+  const updateBtn = document.createElement("button");
+  updateBtn.textContent = "📝 Update Link";
+  updateBtn.onclick = () => {
+    openHyperlinkModal(link);
+    menu.remove();
+  };
+
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "❌ Remove Link";
+  removeBtn.onclick = () => {
+    link.remove();
+    update();
+    menu.remove();
+  };
+
+  [updateBtn, removeBtn].forEach(btn => {
+    btn.style.display = "block";
+    btn.style.width = "100%";
+    btn.style.margin = "4px 0";
+    menu.appendChild(btn);
+  });
+
+  const existing = document.getElementById("customContextMenu");
+  if (existing) existing.remove();
+  document.body.appendChild(menu);
+
+  document.addEventListener("click", () => {
+    if (menu.parentNode) menu.remove();
+  }, { once: true });
+}
 </script>
 
 </body>
 </html>
+
+<script>
+let savedRangeForImage = null;
+
+function openImageModal(existingImg = null) {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForImage = sel.getRangeAt(0).cloneRange();
+  }
+
+  const modal = document.getElementById("imageModal");
+  if (existingImg) {
+    document.getElementById("imgSrc").value = existingImg.src;
+    document.getElementById("imgAlt").value = existingImg.alt;
+    document.getElementById("imgTitle").value = existingImg.title;
+    document.getElementById("imgWidth").value = existingImg.width;
+    document.getElementById("imgHeight").value = existingImg.height;
+    modal.setAttribute("data-editing", "true");
+    modal._imgRef = existingImg;
+  } else {
+    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._imgRef = null;
+  }
+  modal.style.display = "block";
+}
+
+function applyImage() {
+  const src = document.getElementById("imgSrc").value;
+  const alt = document.getElementById("imgAlt").value;
+  const title = document.getElementById("imgTitle").value;
+  const width = document.getElementById("imgWidth").value;
+  const height = document.getElementById("imgHeight").value;
+
+  if (!src) {
+    alert("Image Source is required.");
+    return;
+  }
+
+  const modal = document.getElementById("imageModal");
+  const isEdit = modal.getAttribute("data-editing") === "true";
+  const img = isEdit ? modal._imgRef : document.createElement("img");
+
+  img.src = src;
+  img.alt = alt;
+  img.title = title;
+  if (width) img.setAttribute("width", width); else img.removeAttribute("width");
+  if (height) img.setAttribute("height", height); else img.removeAttribute("height");
+
+  if (!isEdit) {
+    const editor = document.getElementById("editor");
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel.rangeCount) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(img);
+    sel.removeAllRanges();
+    sel.selectAllChildren(img);
+  }
+
+  modal.removeAttribute("data-editing");
+  modal._imgRef = null;
+  modal.style.display = "none";
+  update();
+}
+</script>
