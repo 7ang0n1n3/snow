@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>SNOW KB Editor – Save &amp; Load</title>
+<style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background: #0072c6;
+      color: white;
+      padding: 10px 20px;
+      font-size: 20px;
+    }
+    .toolbar-row {
+      background: #eee;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      position: relative;
+    }
+    .toolbar-row select,
+    .toolbar-row button {
+      font-size: 14px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .toolbar-row button {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .color-menu {
+      position: absolute;
+      display: none;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 5px;
+      grid-template-columns: repeat(5, 24px);
+      gap: 4px;
+      z-index: 999;
+    }
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #ddd;
+      cursor: pointer;
+    }
+    .panel {
+      border-top: 1px solid #ccc;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      height: 33.33vh;
+    }
+    .panel-header {
+      background: #eee;
+      padding: 10px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #ccc;
+    }
+    .panel-body {
+      flex: 1;
+      overflow: auto;
+      padding: 10px;
+    }
+    #editor {
+      height: 100%;
+      width: 100%;
+      border: none;
+      outline: none;
+    }
+    #preview {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+    }
+    #code {
+      width: 100%;
+      height: 100%;
+      font-family: monospace;
+      white-space: pre-wrap;
+      border: none;
+      padding: 10px;
+      resize: none;
+      outline: none;
+    }
+    #fileInput {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<header>📝 SNOW KB Editor – Save &amp; Load</header>
+<!-- Toolbar Row 0 -->
+<div class="toolbar-row">
+<button onclick="saveContent()">💾 Save</button>
+<button onclick="document.getElementById('fileInput').click()">📂 Load</button>
+<input accept=".snowkb" id="fileInput" onchange="loadContent(event)" type="file"/>
+<div style="position: relative; display: inline-block;">
+<button onclick="toggleTableBuilder(event)">➕ Table</button>
+<div id="tableBuilderMenu" style="display:none; position:absolute; background:#fff; border:1px solid #ccc; padding:10px; z-index:1000;">
+<label>Rows: <input id="rowsInput" max="20" min="1" style="width:50px;" type="number" value="2"/></label>
+<label>Cols: <input id="colsInput" max="20" min="1" style="width:50px;" type="number" value="2"/></label>
+<button onclick="insertCustomTable()" type="button">Insert Table</button>
+</div>
+</div>
+</div>
+<!-- Toolbar Row 1 -->
+<div class="toolbar-row">
+<label for="formatSelect">Format: </label>
+<select id="formatSelect" onchange="setFormat(this.value)">
+<option value="p">Paragraph</option>
+<option value="h1">Heading 1</option>
+<option value="h2">Heading 2</option>
+<option value="h3">Heading 3</option>
+<option value="h4">Heading 4</option>
+<option value="h5">Heading 5</option>
+<option value="h6">Heading 6</option>
+<option value="pre">Preformatted</option>
+</select>
+<label for="fontSelect">Font: </label>
+<select id="fontSelect" onchange="setFont(this.value)">
+<option value="">-- Select Font --</option>
+<option value="'andale mono', times">Andale Mono</option>
+<option value="arial, helvetica, sans-serif">Arial</option>
+<option value="'arial black', 'avant garde'">Arial Black</option>
+<option value="'courier new', courier">Courier New</option>
+<option value="terminal, monaco">Terminal</option>
+</select>
+<label for="fontSizeSelect">Size: </label>
+<select id="fontSizeSelect" onchange="setFontSize(this.value)">
+<option value="">-- Select Size --</option>
+<option value="7pt">7pt</option>
+<option value="7.5pt">7.5pt</option>
+<option value="8pt">8pt</option>
+<option value="10pt">10pt</option>
+<option value="12pt">12pt</option>
+<option value="14pt">14pt</option>
+<option value="18pt">18pt</option>
+<option value="24pt">24pt</option>
+<option value="36pt">36pt</option>
+<option value="40pt">40pt</option>
+</select>
+<button onclick="insertAccordion()">📂 Accordion Section</button>
+<button onclick="exec('bold')"><b>B</b></button>
+<button onclick="exec('italic')"><i>I</i></button>
+<button onclick="exec('underline')"><u>U</u></button>
+<button onclick="exec('strikeThrough')"><s>S</s></button>
+<button onclick="toggleColorMenu(this)">🖌️ Text Color</button>
+<button onclick="toggleHighlightMenu(this)">🖍️ Highlight</button>
+</div>
+<!-- Toolbar Row 2 -->
+<div class="toolbar-row">
+<button onclick="exec('outdent')">➖ Decrease Indent</button>
+<button onclick="exec('indent')">➕ Increase Indent</button>
+<button onclick="exec('justifyLeft')">⬅️ Align Left</button>
+<button onclick="exec('justifyCenter')">↔️ Align Center</button>
+<button onclick="exec('justifyRight')">➡️ Align Right</button>
+</div>
+<!-- Panels -->
+<div class="panel">
+<div class="panel-header">Editor</div>
+<div class="panel-body">
+<div contenteditable="true" id="editor" oninput="update()">
+<p>Start writing your KB article here...</p>
+</div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-header">Preview</div>
+<div class="panel-body" id="preview"></div>
+</div>
+<div class="panel">
+<div class="panel-header">HTML Source</div>
+<div class="panel-body">
+<textarea id="code" readonly=""></textarea>
+</div>
+</div>
+<!-- SCRIPT -->
+<script>
+let savedRange = null;
+
+function update() {
+  const html = document.getElementById("editor").innerHTML;
+  document.getElementById("preview").innerHTML = html;
+  document.getElementById("code").value = formatHTML(html);
+}
+
+function exec(cmd) {
+  if (cmd === 'indent' || cmd === 'outdent') {
+    adjustIndent(cmd === 'indent' ? 40 : -40);
+    return;
+  }
+  document.execCommand(cmd, false, null);
+  document.getElementById("editor").focus();
+  update();
+}
+
+function setFormat(tag) {
+  document.execCommand("formatBlock", false, tag);
+  update();
+}
+
+function setFont(font) {
+  document.execCommand("fontName", false, font);
+  document.getElementById("editor").focus();
+  update();
+}
+
+function setFontSize(size) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const contents = range.extractContents();
+  const wrapper = document.createElement("div");
+  wrapper.appendChild(contents);
+  wrapper.querySelectorAll("*").forEach(el => el.style.fontSize = null);
+  const span = document.createElement("span");
+  span.style.fontSize = size;
+  span.innerHTML = wrapper.innerHTML;
+  range.deleteContents();
+  range.insertNode(span);
+  sel.removeAllRanges();
+  sel.selectAllChildren(span);
+  update();
+}
+
+function insertAccordion() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = `
+    <details class="mce-accordion" open="open">
+      <summary>Section</summary>
+      <p>Section Text</p>
+    </details>
+  `;
+  const node = wrapper.firstElementChild;
+  range.insertNode(node);
+  sel.removeAllRanges();
+  sel.selectAllChildren(node);
+  update();
+}
+
+function toggleColorMenu(btn) {
+  closeMenus();
+  const sel = window.getSelection();
+  if (sel.rangeCount) savedRange = sel.getRangeAt(0);
+  const menu = document.getElementById("colorMenu");
+  const rect = btn.getBoundingClientRect();
+  const parentRect = btn.parentElement.getBoundingClientRect();
+  menu.style.left = `${rect.left - parentRect.left}px`;
+  menu.style.top = `${rect.bottom - parentRect.top + 5}px`;
+  menu.style.display = "grid";
+}
+
+function toggleHighlightMenu(btn) {
+  closeMenus();
+  const sel = window.getSelection();
+  if (sel.rangeCount) savedRange = sel.getRangeAt(0);
+  const menu = document.getElementById("highlightMenu");
+  const rect = btn.getBoundingClientRect();
+  const parentRect = btn.parentElement.getBoundingClientRect();
+  menu.style.left = `${rect.left - parentRect.left}px`;
+  menu.style.top = `${rect.bottom - parentRect.top + 5}px`;
+  menu.style.display = "grid";
+}
+
+function closeMenus() {
+  document.getElementById("colorMenu").style.display = "none";
+  document.getElementById("highlightMenu").style.display = "none";
+}
+
+function setColor(color) {
+  if (savedRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  document.execCommand("foreColor", false, color);
+  closeMenus();
+  update();
+}
+
+function setHighlight(color) {
+  if (savedRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  document.execCommand("hiliteColor", false, color);
+  closeMenus();
+  update();
+}
+
+function saveContent() {
+  const content = document.getElementById("editor").innerHTML;
+  const blob = new Blob([content], { type: "text/html" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "knowledge.snowkb";
+  link.click();
+}
+
+function loadContent(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById("editor").innerHTML = e.target.result;
+    update();
+  };
+  reader.readAsText(file);
+}
+
+function adjustIndent(amount) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  let node = sel.focusNode;
+  if (node.nodeType === 3) node = node.parentNode;
+  while (node && !/^(P|LI)$/.test(node.tagName)) {
+    node = node.parentNode;
+  }
+  if (!node) return;
+  const current = parseInt(node.style.paddingLeft || 0);
+  const next = Math.max(current + amount, 0);
+  node.style.paddingLeft = next + "px";
+  update();
+}
+
+function formatHTML(html) {
+  const tab = "  ";
+  let formatted = "";
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  function process(node, indent) {
+    for (let child of node.childNodes) {
+      if (child.nodeType === 3) {
+        const text = child.textContent.trim();
+        if (text) formatted += indent + text + "\n";
+      } else if (child.nodeType === 1) {
+        const tag = child.tagName.toLowerCase();
+        const attrs = [...child.attributes].map(attr => `${attr.name}="${attr.value}"`).join(" ");
+        const openTag = `<${tag}${attrs ? " " + attrs : ""}>`;
+        formatted += indent + openTag + "\n";
+        process(child, indent + tab);
+        formatted += indent + `</${tag}>\n`;
+      }
+    }
+  }
+  process(doc.body, "");
+  return formatted.trim();
+}
+
+update();
+
+
+function toggleTableBuilder(event) {
+  const menu = document.getElementById("tableBuilderMenu");
+  if (!menu) return;
+  if (menu.style.display === "block") {
+    menu.style.display = "none";
+  } else {
+    const button = event.target;
+    const rect = button.getBoundingClientRect();
+    menu.style.position = "absolute";
+    menu.style.left = button.offsetLeft + "px";
+    menu.style.top = (button.offsetTop + button.offsetHeight) + "px";
+    menu.style.display = "block";
+  }
+}
+
+function insertCustomTable() {
+  const rows = parseInt(document.getElementById("rowsInput").value);
+  const cols = parseInt(document.getElementById("colsInput").value);
+
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.width = "100%";
+  table.setAttribute("border", "1");
+
+  const colgroup = document.createElement("colgroup");
+  for (let c = 0; c < cols; c++) {
+    const col = document.createElement("col");
+    col.style.width = (100 / cols) + "%";
+    colgroup.appendChild(col);
+  }
+  table.appendChild(colgroup);
+
+  const tbody = document.createElement("tbody");
+  for (let i = 0; i < rows; i++) {
+    const tr = document.createElement("tr");
+    for (let j = 0; j < cols; j++) {
+      const td = document.createElement("td");
+      td.innerHTML = "&nbsp;";
+      td.style.border = "1px solid black";
+      td.style.padding = "5px";
+      td.style.resize = "both";
+      td.style.overflow = "auto";
+      td.contentEditable = true;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  const editor = document.getElementById("editor");
+  editor.appendChild(table);
+  update();
+}
+</script>
+<!-- Color Menus -->
+<div class="color-menu" id="colorMenu">
+<div class="color-swatch" onclick="setColor('black')" style="background: black;"></div>
+<div class="color-swatch" onclick="setColor('red')" style="background: red;"></div>
+<div class="color-swatch" onclick="setColor('orange')" style="background: orange;"></div>
+<div class="color-swatch" onclick="setColor('green')" style="background: green;"></div>
+<div class="color-swatch" onclick="setColor('blue')" style="background: blue;"></div>
+<div class="color-swatch" onclick="setColor('purple')" style="background: purple;"></div>
+<div class="color-swatch" onclick="setColor('pink')" style="background: pink;"></div>
+<div class="color-swatch" onclick="setColor('teal')" style="background: teal;"></div>
+<div class="color-swatch" onclick="setColor('gray')" style="background: gray;"></div>
+<div class="color-swatch" onclick="setColor('darkorange')" style="background: darkorange;"></div>
+</div>
+<div class="color-menu" id="highlightMenu">
+<div class="color-swatch" onclick="setHighlight('white')" style="background: white;"></div>
+<div class="color-swatch" onclick="setHighlight('yellow')" style="background: yellow;"></div>
+<div class="color-swatch" onclick="setHighlight('lightgreen')" style="background: lightgreen;"></div>
+<div class="color-swatch" onclick="setHighlight('lightblue')" style="background: lightblue;"></div>
+<div class="color-swatch" onclick="setHighlight('lightpink')" style="background: lightpink;"></div>
+<div class="color-swatch" onclick="setHighlight('lightgray')" style="background: lightgray;"></div>
+<div class="color-swatch" onclick="setHighlight('gold')" style="background: gold;"></div>
+<div class="color-swatch" onclick="setHighlight('orange')" style="background: orange;"></div>
+<div class="color-swatch" onclick="setHighlight('lightcoral')" style="background: lightcoral;"></div>
+<div class="color-swatch" onclick="setHighlight('cyan')" style="background: cyan;"></div>
+<div class="color-swatch" onclick="setHighlight('plum')" style="background: plum;"></div>
+</div>
+</body>
+</html>

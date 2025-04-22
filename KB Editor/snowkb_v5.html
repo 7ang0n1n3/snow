@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Robert's Super Duper SNOW KB Editor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    header {
+      background: #0072c6;
+      color: white;
+      padding: 10px 20px;
+      font-size: 20px;
+    }
+    .toolbar-row {
+      background: #eee;
+      padding: 10px;
+      border-bottom: 1px solid #ccc;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      position: relative;
+    }
+    .toolbar-row select,
+    .toolbar-row button {
+      font-size: 14px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .toolbar-row button {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .color-menu {
+      position: absolute;
+      display: none;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 5px;
+      grid-template-columns: repeat(5, 24px);
+      gap: 4px;
+      z-index: 999;
+    }
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border: 1px solid #ddd;
+      cursor: pointer;
+    }
+    .panel {
+      border-top: 1px solid #ccc;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      height: 33.33vh;
+    }
+    .panel-header {
+      background: #eee;
+      padding: 10px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #ccc;
+    }
+    .panel-body {
+      flex: 1;
+      overflow: auto;
+      padding: 10px;
+    }
+    #editor {
+      height: 100%;
+      width: 100%;
+      border: none;
+      outline: none;
+    }
+    #preview {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+    }
+    #code {
+      width: 100%;
+      height: 100%;
+      font-family: monospace;
+      white-space: pre-wrap;
+      border: none;
+      padding: 10px;
+      resize: none;
+      outline: none;
+    }
+    #fileInput {
+      display: none;
+    }
+  </style>
+
+<style>
+  #editor.empty::before {
+    content: attr(data-placeholder);
+    color: #ccc;
+    position: absolute;
+    pointer-events: none;
+    padding: 10px;
+  }
+  #editor {
+    position: relative;
+  }
+</style>
+</head>
+<body>
+
+<header>📝 Robert's Super Duper SNOW KB Editor</header>
+
+<!-- Toolbar Row 0 -->
+<div class="toolbar-row">
+  <button onclick="saveContent()">💾 Save</button>
+  <button onclick="document.getElementById('fileInput').click()">📂 Load</button>
+  <input type="file" id="fileInput" accept=".snowkb" onchange="loadContent(event)">
+</div>
+
+<!-- Toolbar Row 1 -->
+<div class="toolbar-row">
+  <label for="formatSelect">Format: </label>
+  <select id="formatSelect" onchange="setFormat(this.value)">
+    <option value="p">Paragraph</option>
+    <option value="h1">Heading 1</option>
+    <option value="h2">Heading 2</option>
+    <option value="h3">Heading 3</option>
+    <option value="h4">Heading 4</option>
+    <option value="h5">Heading 5</option>
+    <option value="h6">Heading 6</option>
+    <option value="pre">Preformatted</option>
+  </select>
+
+  <label for="fontSelect">Font: </label>
+  <select id="fontSelect" onchange="setFont(this.value)">
+    <option value="">-- Select Font --</option>
+    <option value="'andale mono', times">Andale Mono</option>
+    <option value="arial, helvetica, sans-serif">Arial</option>
+    <option value="'arial black', 'avant garde'">Arial Black</option>
+    <option value="'courier new', courier">Courier New</option>
+    <option value="terminal, monaco">Terminal</option>
+  </select>
+
+  <label for="fontSizeSelect">Size: </label>
+  <select id="fontSizeSelect" onchange="setFontSize(this.value)">
+    <option value="">-- Select Size --</option>
+    <option value="7pt">7pt</option>
+    <option value="7.5pt">7.5pt</option>
+    <option value="8pt">8pt</option>
+    <option value="10pt">10pt</option>
+    <option value="12pt">12pt</option>
+    <option value="14pt">14pt</option>
+    <option value="18pt">18pt</option>
+    <option value="24pt">24pt</option>
+    <option value="36pt">36pt</option>
+    <option value="40pt">40pt</option>
+  </select>
+
+  <button onclick="insertAccordion()">📂 Accordion Section</button>
+  <button onclick="exec('bold')"><b>B</b></button>
+  <button onclick="exec('italic')"><i>I</i></button>
+  <button onclick="exec('underline')"><u>U</u></button>
+  <button onclick="exec('strikeThrough')"><s>S</s></button>
+  <button onclick="toggleColorMenu(this)">🖌️ Text Color</button>
+  <button onclick="toggleHighlightMenu(this)">🖍️ Highlight</button>
+</div>
+
+<!-- Toolbar Row 2 -->
+<button onclick="openImageModal()">🖼️ Insert Image</button>
+<button onclick="openHyperlinkModal()">🔗 Hyperlink</button>
+
+<button id="tableInsertButton" onclick="toggleTableMenu(this)">📊 Insert Table</button>
+<div id="tableMenu" class="color-menu" style="grid-template-columns: repeat(5, 30px);"></div>
+
+<div class="toolbar-row">
+  <button onclick="exec('outdent')">➖ Decrease Indent</button>
+  <button onclick="exec('indent')">➕ Increase Indent</button>
+  <button onclick="exec('justifyLeft')">⬅️ Align Left</button>
+  <button onclick="exec('justifyCenter')">↔️ Align Center</button>
+  <button onclick="exec('justifyRight')">➡️ Align Right</button>
+</div>
+
+<!-- Panels -->
+<div class="panel">
+  <div class="panel-header">Editor</div>
+  <div class="panel-body">
+    <div id="editor" contenteditable="true" class="empty" oninput="update()">
+      <p><br></p>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">Preview</div>
+  <div class="panel-body" id="preview"></div>
+</div>
+
+<div class="panel">
+  <div class="panel-header">HTML Source</div>
+  <div class="panel-body">
+    <textarea id="code" readonly></textarea>
+  </div>
+</div>
+
+<!-- SCRIPT -->
+<script>
+let savedRange = null;
+
+function update() {
+  const html = document.getElementById("editor").innerHTML;
+  document.getElementById("preview").innerHTML = html;
+  document.getElementById("code").value = formatHTML(html);
+}
+
+function exec(cmd) {
+  if (cmd === 'indent' || cmd === 'outdent') {
+    adjustIndent(cmd === 'indent' ? 40 : -40);
+    return;
+  }
+  document.execCommand(cmd, false, null);
+  document.getElementById("editor").focus();
+  update();
+}
+
+function setFormat(tag) {
+  document.execCommand("formatBlock", false, tag);
+  update();
+}
+
+function setFont(font) {
+  document.execCommand("fontName", false, font);
+  document.getElementById("editor").focus();
+  update();
+}
+
+function setFontSize(size) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const contents = range.extractContents();
+  const wrapper = document.createElement("div");
+  wrapper.appendChild(contents);
+  wrapper.querySelectorAll("*").forEach(el => el.style.fontSize = null);
+  const span = document.createElement("span");
+  span.style.fontSize = size;
+  span.innerHTML = wrapper.innerHTML;
+  range.deleteContents();
+  range.insertNode(span);
+  sel.removeAllRanges();
+  sel.selectAllChildren(span);
+  update();
+}
+
+function insertAccordion() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = `
+    <details class="mce-accordion" open="open">
+      <summary>Section</summary>
+      <p>Section Text</p>
+    </details>
+  `;
+  const node = wrapper.firstElementChild;
+  range.insertNode(node);
+  sel.removeAllRanges();
+  sel.selectAllChildren(node);
+  update();
+}
+
+function toggleColorMenu(btn) {
+  closeMenus();
+  const sel = window.getSelection();
+  if (sel.rangeCount) savedRange = sel.getRangeAt(0);
+  const menu = document.getElementById("colorMenu");
+  const rect = btn.getBoundingClientRect();
+  const parentRect = btn.parentElement.getBoundingClientRect();
+  menu.style.left = `${rect.left - parentRect.left}px`;
+  menu.style.top = `${rect.bottom - parentRect.top + 5}px`;
+  menu.style.display = "grid";
+}
+
+function toggleHighlightMenu(btn) {
+  closeMenus();
+  const sel = window.getSelection();
+  if (sel.rangeCount) savedRange = sel.getRangeAt(0);
+  const menu = document.getElementById("highlightMenu");
+  const rect = btn.getBoundingClientRect();
+  const parentRect = btn.parentElement.getBoundingClientRect();
+  menu.style.left = `${rect.left - parentRect.left}px`;
+  menu.style.top = `${rect.bottom - parentRect.top + 5}px`;
+  menu.style.display = "grid";
+}
+
+function closeMenus() {
+  document.getElementById("colorMenu").style.display = "none";
+  document.getElementById("highlightMenu").style.display = "none";
+}
+
+function setColor(color) {
+  if (savedRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  document.execCommand("foreColor", false, color);
+  closeMenus();
+  update();
+}
+
+function setHighlight(color) {
+  if (savedRange) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  document.execCommand("hiliteColor", false, color);
+  closeMenus();
+  update();
+}
+
+function saveContent() {
+  const content = document.getElementById("editor").innerHTML;
+  const blob = new Blob([content], { type: "text/html" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "knowledge.snowkb";
+  link.click();
+}
+
+function loadContent(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById("editor").innerHTML = e.target.result;
+    update();
+  };
+  reader.readAsText(file);
+}
+
+function adjustIndent(amount) {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  let node = sel.focusNode;
+  if (node.nodeType === 3) node = node.parentNode;
+  while (node && !/^(P|LI)$/.test(node.tagName)) {
+    node = node.parentNode;
+  }
+  if (!node) return;
+  const current = parseInt(node.style.paddingLeft || 0);
+  const next = Math.max(current + amount, 0);
+  node.style.paddingLeft = next + "px";
+  update();
+}
+
+function formatHTML(html) {
+  const tab = "  ";
+  let formatted = "";
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  function process(node, indent) {
+    for (let child of node.childNodes) {
+      if (child.nodeType === 3) {
+        const text = child.textContent.trim();
+        if (text) formatted += indent + text + "\n";
+      } else if (child.nodeType === 1) {
+        const tag = child.tagName.toLowerCase();
+        const attrs = [...child.attributes].map(attr => `${attr.name}="${attr.value}"`).join(" ");
+        const openTag = `<${tag}${attrs ? " " + attrs : ""}>`;
+        formatted += indent + openTag + "\n";
+        process(child, indent + tab);
+        formatted += indent + `</${tag}>\n`;
+      }
+    }
+  }
+  process(doc.body, "");
+  return formatted.trim();
+}
+
+update();
+</script>
+
+<!-- Color Menus -->
+<div id="colorMenu" class="color-menu">
+  <div class="color-swatch" style="background: black;" onclick="setColor('black')"></div>
+  <div class="color-swatch" style="background: red;" onclick="setColor('red')"></div>
+  <div class="color-swatch" style="background: orange;" onclick="setColor('orange')"></div>
+  <div class="color-swatch" style="background: green;" onclick="setColor('green')"></div>
+  <div class="color-swatch" style="background: blue;" onclick="setColor('blue')"></div>
+  <div class="color-swatch" style="background: purple;" onclick="setColor('purple')"></div>
+  <div class="color-swatch" style="background: pink;" onclick="setColor('pink')"></div>
+  <div class="color-swatch" style="background: teal;" onclick="setColor('teal')"></div>
+  <div class="color-swatch" style="background: gray;" onclick="setColor('gray')"></div>
+  <div class="color-swatch" style="background: darkorange;" onclick="setColor('darkorange')"></div>
+</div>
+
+<div id="highlightMenu" class="color-menu">
+  <div class="color-swatch" style="background: white;" onclick="setHighlight('white')"></div>
+  <div class="color-swatch" style="background: yellow;" onclick="setHighlight('yellow')"></div>
+  <div class="color-swatch" style="background: lightgreen;" onclick="setHighlight('lightgreen')"></div>
+  <div class="color-swatch" style="background: lightblue;" onclick="setHighlight('lightblue')"></div>
+  <div class="color-swatch" style="background: lightpink;" onclick="setHighlight('lightpink')"></div>
+  <div class="color-swatch" style="background: lightgray;" onclick="setHighlight('lightgray')"></div>
+  <div class="color-swatch" style="background: gold;" onclick="setHighlight('gold')"></div>
+  <div class="color-swatch" style="background: orange;" onclick="setHighlight('orange')"></div>
+  <div class="color-swatch" style="background: lightcoral;" onclick="setHighlight('lightcoral')"></div>
+  <div class="color-swatch" style="background: cyan;" onclick="setHighlight('cyan')"></div>
+  <div class="color-swatch" style="background: plum;" onclick="setHighlight('plum')"></div>
+</div>
+
+
+<script>
+function toggleTableMenu() {
+  closeMenus();
+  let rows = prompt("Enter number of rows (1-50):", "3");
+  let cols = prompt("Enter number of columns (1-50):", "3");
+
+  rows = parseInt(rows, 10);
+  cols = parseInt(cols, 10);
+
+  if (isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0 || rows > 50 || cols > 50) {
+    alert("Invalid input. Please enter numbers between 1 and 50.");
+    return;
+  }
+
+  insertTable(rows, cols);
+}
+</script>
+
+
+<script>
+function handleTableContextMenu(e) {
+  e.preventDefault();
+  const cell = e.target.closest("td, th");
+  const row = e.target.closest("tr");
+  const table = e.target.closest("table");
+  if (!cell || !row || !table) return;
+
+  const colIndex = Array.from(row.children).indexOf(cell);
+
+  const menu = document.createElement("div");
+  menu.style.position = "absolute";
+  menu.style.top = `${e.pageY}px`;
+  menu.style.left = `${e.pageX}px`;
+  menu.style.background = "white";
+  menu.style.border = "1px solid #ccc";
+  menu.style.padding = "5px";
+  menu.style.zIndex = 10000;
+
+  const actions = [
+    { text: "➕ Insert Row Below", onClick: () => insertRowBelow(row) },
+    { text: "➕ Insert Column Right", onClick: () => insertColRight(table, colIndex) },
+    { text: "🗑️ Delete Row", onClick: () => { row.remove(); update(); } },
+    { text: "🗑️ Delete Column", onClick: () => {
+        table.querySelectorAll("tr").forEach(r => r.cells[colIndex]?.remove());
+        table.querySelectorAll("col")[colIndex]?.remove();
+        update();
+      }
+    },
+    { text: "🔀 Merge Row", onClick: () => {
+        const cells = row.querySelectorAll("td");
+        if (cells.length <= 1) return;
+        const colspan = cells.length;
+        const mergedCell = cells[0];
+        mergedCell.colSpan = colspan;
+        for (let i = 1; i < cells.length; i++) {
+          mergedCell.innerHTML += " " + cells[i].innerHTML;
+          cells[i].remove();
+        }
+        update();
+      }
+    },
+    { text: "🔗 Merge Cell Right", onClick: () => {
+        const next = cell.nextElementSibling;
+        if (!next) return;
+        const span = parseInt(cell.colSpan || 1) + parseInt(next.colSpan || 1);
+        cell.colSpan = span;
+        cell.innerHTML += " " + next.innerHTML;
+        next.remove();
+        update();
+      }
+    },
+    { text: "🎨 Change Cell Background", onClick: () => {
+        const color = prompt("Enter background color (name or hex):", "#ffffcc");
+        if (color) {
+          cell.style.backgroundColor = color;
+          update();
+        }
+      }
+    },
+    { text: "🖋️ Set Border Thickness", onClick: () => {
+        const width = prompt("Enter border thickness (e.g., 1px, 2px):", "2px");
+        if (width) {
+          table.style.borderWidth = width;
+          table.querySelectorAll("td").forEach(td => td.style.borderWidth = width);
+          update();
+        }
+      }
+    },
+    { text: "🖌️ Set Border Color", onClick: () => {
+        const color = prompt("Enter border color (name or hex):", "#000000");
+        if (color) {
+          table.style.borderColor = color;
+          table.querySelectorAll("td").forEach(td => td.style.borderColor = color);
+          update();
+        }
+      }
+    },
+    { text: "⬅️ Align Left", onClick: () => { table.style.margin = "10px 0 10px auto"; update(); } },
+    { text: "↔️ Align Center", onClick: () => { table.style.margin = "10px auto"; update(); } },
+    { text: "➡️ Align Right", onClick: () => { table.style.margin = "10px auto 10px 0"; update(); } },
+    { text: "❌ Delete Table", onClick: () => { table.remove(); update(); } }
+  ];
+
+  actions.forEach(action => {
+    const btn = document.createElement("button");
+    btn.textContent = action.text;
+    btn.onclick = () => {
+      action.onClick();
+      if (menu.parentNode) menu.remove();
+    };
+    btn.style.display = "block";
+    btn.style.margin = "2px 0";
+    menu.appendChild(btn);
+  });
+
+  document.body.appendChild(menu);
+  document.addEventListener("click", () => {
+    if (menu.parentNode) menu.remove();
+  }, { once: true });
+}
+</script>
+
+
+<script>
+function insertTable(rows, cols) {
+  closeMenus();
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.margin = "10px 0";
+  table.style.width = "100%";
+  table.style.border = "1px solid #ccc";
+  table.classList.add("resizable-table");
+  table.oncontextmenu = handleTableContextMenu;
+
+  // Create colgroup
+  const colgroup = document.createElement("colgroup");
+  for (let j = 0; j < cols; j++) {
+    const col = document.createElement("col");
+    col.style.width = (100 / cols) + "%";
+    colgroup.appendChild(col);
+  }
+  table.appendChild(colgroup);
+
+  // Create rows and cells
+  for (let i = 0; i < rows; i++) {
+    const tr = document.createElement("tr");
+    for (let j = 0; j < cols; j++) {
+      const td = document.createElement("td");
+      td.textContent = "Cell";
+      td.style.border = "1px solid #ccc";
+      td.style.padding = "5px";
+      td.contentEditable = true;
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+
+  // Insert at cursor
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(table);
+  sel.removeAllRanges();
+  sel.selectAllChildren(table);
+
+  makeTableResizable(table);
+  update();
+}
+</script>
+
+
+<script>
+function insertRowBelow(referenceRow) {
+  const newRow = referenceRow.cloneNode(true);
+  newRow.querySelectorAll("td").forEach(td => td.textContent = "Cell");
+  referenceRow.after(newRow);
+  update();
+}
+
+function insertColRight(table, colIndex) {
+  table.querySelectorAll("tr").forEach(row => {
+    const newCell = row.insertCell(colIndex + 1);
+    newCell.textContent = "Cell";
+    newCell.style.border = "1px solid #ccc";
+    newCell.style.padding = "5px";
+    newCell.contentEditable = true;
+  });
+  const colgroup = table.querySelector("colgroup");
+  if (colgroup) {
+    const newCol = document.createElement("col");
+    newCol.style.width = "100px";
+    colgroup.insertBefore(newCol, colgroup.children[colIndex + 1] || null);
+  }
+  update();
+}
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const editor = document.getElementById("editor");
+  function updatePlaceholder() {
+    editor.classList.toggle("empty", editor.innerHTML.trim() === "" || editor.innerHTML === "<br>");
+  }
+  editor.setAttribute("data-placeholder", "Start writing your KB article here...");
+  updatePlaceholder();
+  editor.addEventListener("input", updatePlaceholder);
+});
+</script>
+
+<script>
+function makeTableResizable(table) {
+  const colgroup = table.querySelector("colgroup");
+  const cols = colgroup ? colgroup.children : [];
+  const firstRow = table.rows[0];
+  if (!firstRow) return;
+
+  [...cols].forEach((col, index) => {
+    const cell = firstRow.cells[index];
+    if (!cell) return;
+
+    const resizer = document.createElement("div");
+    resizer.style.width = "6px";
+    resizer.style.cursor = "col-resize";
+    resizer.style.position = "absolute";
+    resizer.style.top = "0";
+    resizer.style.right = "0";
+    resizer.style.bottom = "0";
+    resizer.style.zIndex = "10";
+    resizer.style.userSelect = "none";
+    resizer.style.backgroundColor = "#ccc";
+    cell.style.position = "relative";
+    cell.appendChild(resizer);
+
+    let startX, startWidth;
+
+    resizer.addEventListener("mousedown", function (e) {
+      startX = e.clientX;
+      startWidth = parseInt(window.getComputedStyle(col).width, 10);
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    });
+
+    function onMouseMove(e) {
+      const delta = e.clientX - startX;
+      col.style.width = (startWidth + delta) + "px";
+    }
+
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+  });
+
+  // Add table resizer (bottom right corner)
+  const corner = document.createElement("div");
+  corner.style.width = "12px";
+  corner.style.height = "12px";
+  corner.style.background = "#999";
+  corner.style.position = "absolute";
+  corner.style.right = "0";
+  corner.style.bottom = "0";
+  corner.style.cursor = "nwse-resize";
+  corner.style.zIndex = "20";
+  corner.style.border = "2px solid white";
+  table.style.position = "relative";
+  table.appendChild(corner);
+
+  let startW, startH, startMouseX, startMouseY;
+
+  corner.addEventListener("mousedown", function (e) {
+    startW = table.offsetWidth;
+    startH = table.offsetHeight;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+
+    function resizeTable(e) {
+      table.style.width = startW + (e.clientX - startMouseX) + "px";
+      table.style.height = startH + (e.clientY - startMouseY) + "px";
+    }
+
+    function stopResizeTable() {
+      document.removeEventListener("mousemove", resizeTable);
+      document.removeEventListener("mouseup", stopResizeTable);
+    }
+
+    document.addEventListener("mousemove", resizeTable);
+    document.addEventListener("mouseup", stopResizeTable);
+    e.preventDefault();
+  });
+}
+</script>
+
+
+<script>
+function makeTableResizable(table) {
+  const colgroup = table.querySelector("colgroup");
+  const cols = colgroup ? colgroup.children : [];
+  const firstRow = table.rows[0];
+  if (!firstRow) return;
+
+  [...cols].forEach((col, index) => {
+    const cell = firstRow.cells[index];
+    if (!cell) return;
+
+    const resizer = document.createElement("div");
+    resizer.style.width = "6px";
+    resizer.style.cursor = "col-resize";
+    resizer.style.position = "absolute";
+    resizer.style.top = "0";
+    resizer.style.right = "0";
+    resizer.style.bottom = "0";
+    resizer.style.zIndex = "10";
+    resizer.style.userSelect = "none";
+    resizer.style.backgroundColor = "#ccc";
+    cell.style.position = "relative";
+    cell.appendChild(resizer);
+
+    let startX, startWidth;
+
+    resizer.addEventListener("mousedown", function (e) {
+      startX = e.clientX;
+      startWidth = parseInt(window.getComputedStyle(col).width, 10);
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    });
+
+    function onMouseMove(e) {
+      const delta = e.clientX - startX;
+      col.style.width = (startWidth + delta) + "px";
+    }
+
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+  });
+
+  // Add table resizer (bottom right corner)
+  const corner = document.createElement("div");
+  corner.style.width = "12px";
+  corner.style.height = "12px";
+  corner.style.background = "#999";
+  corner.style.position = "absolute";
+  corner.style.right = "0";
+  corner.style.bottom = "0";
+  corner.style.cursor = "nwse-resize";
+  corner.style.zIndex = "20";
+  corner.style.border = "2px solid white";
+  table.style.position = "relative";
+  table.appendChild(corner);
+
+  let startW, startH, startMouseX, startMouseY;
+
+  corner.addEventListener("mousedown", function (e) {
+    startW = table.offsetWidth;
+    startH = table.offsetHeight;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+
+    function resizeTable(e) {
+      table.style.width = startW + (e.clientX - startMouseX) + "px";
+      table.style.height = startH + (e.clientY - startMouseY) + "px";
+    }
+
+    function stopResizeTable() {
+      document.removeEventListener("mousemove", resizeTable);
+      document.removeEventListener("mouseup", stopResizeTable);
+    }
+
+    document.addEventListener("mousemove", resizeTable);
+    document.addEventListener("mouseup", stopResizeTable);
+    e.preventDefault();
+  });
+}
+</script>
+
+
+<style>
+  #hyperlinkModal {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #ccc;
+    padding: 15px;
+    z-index: 9999;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  }
+  #hyperlinkModal input, #hyperlinkModal select {
+    margin: 5px 0;
+    width: 100%;
+    padding: 4px;
+  }
+</style>
+<div id="hyperlinkModal" style="display:none;">
+  <label>URL: <input type="text" id="linkUrl" /></label><br/>
+  <label>Text to Display: <input type="text" id="linkText" /></label><br/>
+  <label>Title: <input type="text" id="linkTitle" /></label><br/>
+  <label>Target: 
+    <select id="linkTarget">
+      <option value="">None</option>
+      <option value="_self">Same frame (_self)</option>
+      <option value="_blank">New window (_blank)</option>
+      <option value="_top">Top frame (_top)</option>
+    </select>
+  </label><br/>
+  <button onclick="applyHyperlink()">Insert Link</button>
+  <button onclick="document.getElementById('hyperlinkModal').style.display='none'">Cancel</button>
+</div>
+<script>
+let savedRangeForLink = null;
+
+function openHyperlinkModal() {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForLink = sel.getRangeAt(0);
+  }
+  document.getElementById("hyperlinkModal").style.display = "block";
+}
+
+function applyHyperlink() {
+  const url = document.getElementById("linkUrl").value;
+  const text = document.getElementById("linkText").value;
+  const title = document.getElementById("linkTitle").value;
+  const target = document.getElementById("linkTarget").value;
+
+  if (!url || !text) {
+    alert("URL and Text to Display are required.");
+    return;
+  }
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.textContent = text;
+  if (title) a.title = title;
+  if (target) a.target = target;
+
+  if (savedRangeForLink) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRangeForLink);
+    savedRangeForLink.deleteContents();
+    savedRangeForLink.insertNode(a);
+    sel.removeAllRanges();
+    savedRangeForLink = null;
+  }
+
+  document.getElementById("hyperlinkModal").style.display = "none";
+  update();
+}
+</script>
+
+
+<style>
+  #imageModal {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border: 1px solid #ccc;
+    padding: 15px;
+    z-index: 9999;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  }
+  #imageModal input {
+    margin: 5px 0;
+    width: 100%;
+    padding: 4px;
+  }
+</style>
+<div id="imageModal" style="display:none;">
+  <label>Image Source (URL): <input type="text" id="imgSrc" /></label><br/>
+  <label>Alt Text: <input type="text" id="imgAlt" /></label><br/>
+  <label>Image Title: <input type="text" id="imgTitle" /></label><br/>
+  <label>Width (px or %): <input type="text" id="imgWidth" /></label><br/>
+  <label>Height (px or %): <input type="text" id="imgHeight" /></label><br/>
+  <button onclick="applyImage()">Insert Image</button>
+  <button onclick="document.getElementById('imageModal').style.display='none'">Cancel</button>
+</div>
+<script>
+let savedRangeForImage = null;
+
+function openImageModal() {
+  const sel = window.getSelection();
+  if (sel.rangeCount > 0) {
+    savedRangeForImage = sel.getRangeAt(0);
+  }
+  document.getElementById("imageModal").style.display = "block";
+}
+
+function applyImage() {
+  const src = document.getElementById("imgSrc").value;
+  const alt = document.getElementById("imgAlt").value;
+  const title = document.getElementById("imgTitle").value;
+  const width = document.getElementById("imgWidth").value;
+  const height = document.getElementById("imgHeight").value;
+
+  if (!src) {
+    alert("Image Source is required.");
+    return;
+  }
+
+  const img = document.createElement("img");
+  img.src = src;
+  if (alt) img.alt = alt;
+  if (title) img.title = title;
+  if (width) img.setAttribute("width", width);
+  if (height) img.setAttribute("height", height);
+
+  if (savedRangeForImage) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRangeForImage);
+    savedRangeForImage.deleteContents();
+    savedRangeForImage.insertNode(img);
+    sel.removeAllRanges();
+    savedRangeForImage = null;
+  }
+
+  document.getElementById("imageModal").style.display = "none";
+  update();
+}
+</script>
+
+</body>
+</html>
