@@ -817,18 +817,29 @@ function makeTableResizable(table) {
     padding: 4px;
   }
 </style>
+
 <div id="hyperlinkModal" style="display:none;">
-  <label>URL: <input type="text" id="linkUrl" /></label><br/>
-  <label>Text to Display: <input type="text" id="linkText" /></label><br/>
-  <label>Title: <input type="text" id="linkTitle" /></label><br/>
-  <label>Target: 
+  <div>
+    <label for="linkUrl">URL:</label>
+    <input type="text" id="linkUrl" />
+  </div>
+  <div>
+    <label for="linkText">Text to Display:</label>
+    <input type="text" id="linkText" />
+  </div>
+  <div>
+    <label for="linkTitle">Title:</label>
+    <input type="text" id="linkTitle" />
+  </div>
+  <div>
+    <label for="linkTarget">Target:</label>
     <select id="linkTarget">
       <option value="">None</option>
       <option value="_self">Same frame (_self)</option>
       <option value="_blank">New window (_blank)</option>
       <option value="_top">Top frame (_top)</option>
     </select>
-  </label><br/>
+  </div>
   <button onclick="applyHyperlink()">Insert Link</button>
   <button onclick="document.getElementById('hyperlinkModal').style.display='none'">Cancel</button>
 </div>
@@ -854,23 +865,34 @@ function applyHyperlink() {
     return;
   }
 
-  const a = document.createElement("a");
+  const modal = document.getElementById("hyperlinkModal");
+  let a = modal.getAttribute("data-editing") ? modal._linkRef : document.createElement("a");
   a.href = url;
   a.textContent = text;
   if (title) a.title = title;
   if (target) a.target = target;
 
-  if (savedRangeForLink) {
-    const sel = window.getSelection();
+  const editor = document.getElementById("editor");
+  editor.focus();
+
+  const sel = window.getSelection();
+  if (!modal.getAttribute("data-editing")) {
+    if (!sel.rangeCount) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(a);
     sel.removeAllRanges();
-    sel.addRange(savedRangeForLink);
-    savedRangeForLink.deleteContents();
-    savedRangeForLink.insertNode(a);
-    sel.removeAllRanges();
-    savedRangeForLink = null;
+    sel.selectAllChildren(a);
   }
 
-  document.getElementById("hyperlinkModal").style.display = "none";
+  modal.style.display = "none";
   update();
 }
 </script>
@@ -1091,19 +1113,27 @@ function applyHyperlink() {
   let a = modal.getAttribute("data-editing") ? modal._linkRef : document.createElement("a");
   a.href = url;
   a.textContent = text;
-  a.title = title;
-  a.target = target;
+  if (title) a.title = title;
+  if (target) a.target = target;
 
+  const editor = document.getElementById("editor");
+  editor.focus();
+
+  const sel = window.getSelection();
   if (!modal.getAttribute("data-editing")) {
-    if (savedRangeForLink) {
-      const sel = window.getSelection();
+    if (!sel.rangeCount) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
       sel.removeAllRanges();
-      sel.addRange(savedRangeForLink);
-      savedRangeForLink.deleteContents();
-      savedRangeForLink.insertNode(a);
-      sel.removeAllRanges();
-      savedRangeForLink = null;
+      sel.addRange(range);
     }
+
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(a);
+    sel.removeAllRanges();
+    sel.selectAllChildren(a);
   }
 
   modal.style.display = "none";
