@@ -161,7 +161,7 @@
     <option value="40pt">40pt</option>
   </select>
 
-  <button onclick="insertAccordion()">📂 Accordion Section</button>
+  
   <button onclick="exec('bold')"><b>B</b></button>
   <button onclick="exec('italic')"><i>I</i></button>
   <button onclick="exec('underline')"><u>U</u></button>
@@ -171,6 +171,7 @@
 </div>
 
 <!-- Toolbar Row 2 -->
+<button onclick="insertAccordion()">📂 Accordion Section</button>
 <button onclick="openImageModal()">🖼️ Insert Image</button>
 <button onclick="openHyperlinkModal()">🔗 Hyperlink</button>
 
@@ -943,6 +944,169 @@ function applyImage() {
   }
 
   document.getElementById("imageModal").style.display = "none";
+  update();
+}
+</script>
+
+
+<script>
+document.addEventListener("contextmenu", function(e) {
+  const target = e.target;
+  if (target.tagName === "IMG") {
+    e.preventDefault();
+    showImageContextMenu(target, e.pageX, e.pageY);
+  } else if (target.tagName === "A") {
+    e.preventDefault();
+    showLinkContextMenu(target, e.pageX, e.pageY);
+  }
+});
+
+function showImageContextMenu(img, x, y) {
+  const menu = createContextMenu(x, y);
+  menu.appendChild(createMenuItem("📝 Update Image", () => openImageModal(img)));
+  menu.appendChild(createMenuItem("❌ Remove Image", () => { img.remove(); update(); }));
+  document.body.appendChild(menu);
+}
+
+function showLinkContextMenu(link, x, y) {
+  const menu = createContextMenu(x, y);
+  menu.appendChild(createMenuItem("📝 Update Link", () => openHyperlinkModal(link)));
+  menu.appendChild(createMenuItem("❌ Remove Link", () => { link.remove(); update(); }));
+  document.body.appendChild(menu);
+}
+
+function createContextMenu(x, y) {
+  const menu = document.createElement("div");
+  menu.style.position = "absolute";
+  menu.style.top = y + "px";
+  menu.style.left = x + "px";
+  menu.style.background = "white";
+  menu.style.border = "1px solid #ccc";
+  menu.style.padding = "5px";
+  menu.style.zIndex = 99999;
+  menu.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+  document.addEventListener("click", () => menu.remove(), { once: true });
+  return menu;
+}
+
+function createMenuItem(text, action) {
+  const btn = document.createElement("button");
+  btn.textContent = text;
+  btn.onclick = () => {
+    action();
+    document.body.querySelectorAll("div[style*='z-index: 99999']").forEach(m => m.remove());
+  };
+  btn.style.display = "block";
+  btn.style.width = "100%";
+  btn.style.margin = "2px 0";
+  return btn;
+}
+
+// Patch modals to support update mode
+function openImageModal(existingImg = null) {
+  savedRangeForImage = null;
+  const modal = document.getElementById("imageModal");
+  if (existingImg) {
+    document.getElementById("imgSrc").value = existingImg.src;
+    document.getElementById("imgAlt").value = existingImg.alt;
+    document.getElementById("imgTitle").value = existingImg.title;
+    document.getElementById("imgWidth").value = existingImg.width;
+    document.getElementById("imgHeight").value = existingImg.height;
+    modal.setAttribute("data-editing", "true");
+    modal._imgRef = existingImg;
+  } else {
+    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._imgRef = null;
+  }
+  modal.style.display = "block";
+}
+
+function applyImage() {
+  const src = document.getElementById("imgSrc").value;
+  const alt = document.getElementById("imgAlt").value;
+  const title = document.getElementById("imgTitle").value;
+  const width = document.getElementById("imgWidth").value;
+  const height = document.getElementById("imgHeight").value;
+
+  if (!src) {
+    alert("Image Source is required.");
+    return;
+  }
+
+  const modal = document.getElementById("imageModal");
+  let img = modal.getAttribute("data-editing") ? modal._imgRef : document.createElement("img");
+  img.src = src;
+  img.alt = alt;
+  img.title = title;
+  if (width) img.setAttribute("width", width); else img.removeAttribute("width");
+  if (height) img.setAttribute("height", height); else img.removeAttribute("height");
+
+  if (!modal.getAttribute("data-editing")) {
+    if (savedRangeForImage) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRangeForImage);
+      savedRangeForImage.deleteContents();
+      savedRangeForImage.insertNode(img);
+      sel.removeAllRanges();
+      savedRangeForImage = null;
+    }
+  }
+
+  modal.style.display = "none";
+  update();
+}
+
+function openHyperlinkModal(existingLink = null) {
+  savedRangeForLink = null;
+  const modal = document.getElementById("hyperlinkModal");
+  if (existingLink) {
+    document.getElementById("linkUrl").value = existingLink.href;
+    document.getElementById("linkText").value = existingLink.textContent;
+    document.getElementById("linkTitle").value = existingLink.title;
+    document.getElementById("linkTarget").value = existingLink.target || "";
+    modal.setAttribute("data-editing", "true");
+    modal._linkRef = existingLink;
+  } else {
+    document.querySelectorAll("#hyperlinkModal input, #hyperlinkModal select").forEach(i => i.value = "");
+    modal.removeAttribute("data-editing");
+    modal._linkRef = null;
+  }
+  modal.style.display = "block";
+}
+
+function applyHyperlink() {
+  const url = document.getElementById("linkUrl").value;
+  const text = document.getElementById("linkText").value;
+  const title = document.getElementById("linkTitle").value;
+  const target = document.getElementById("linkTarget").value;
+
+  if (!url || !text) {
+    alert("URL and Text to Display are required.");
+    return;
+  }
+
+  const modal = document.getElementById("hyperlinkModal");
+  let a = modal.getAttribute("data-editing") ? modal._linkRef : document.createElement("a");
+  a.href = url;
+  a.textContent = text;
+  a.title = title;
+  a.target = target;
+
+  if (!modal.getAttribute("data-editing")) {
+    if (savedRangeForLink) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedRangeForLink);
+      savedRangeForLink.deleteContents();
+      savedRangeForLink.insertNode(a);
+      sel.removeAllRanges();
+      savedRangeForLink = null;
+    }
+  }
+
+  modal.style.display = "none";
   update();
 }
 </script>
