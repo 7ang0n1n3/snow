@@ -72,6 +72,9 @@
       overflow: auto;
       padding: 10px;
     }
+    .accordion-toggle {
+      font-size: 30px;
+    }
     #editor {
       height: 100%;
       width: 100%;
@@ -110,6 +113,7 @@
     position: relative;
   }
 </style>
+<script>let savedRangeForLink = null; let savedRangeForImage = null;</script>
 </head>
 <body>
 
@@ -258,6 +262,8 @@ function setFontSize(size) {
 }
 
 function insertAccordion() {
+  const editor = document.getElementById("editor");
+  if (!isInsideEditor()) { editor.focus(); placeCursorAtEnd(editor); }
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
   const range = sel.getRangeAt(0);
@@ -329,7 +335,7 @@ function setHighlight(color) {
 function saveContent() {
   const content = document.getElementById("editor").innerHTML;
   const blob = new Blob([content], { type: "text/html" });
-  const link = document.createElement("a");
+const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = "knowledge.snowkb";
   link.click();
@@ -387,6 +393,7 @@ function formatHTML(html) {
 }
 
 update();
+}
 </script>
 
 <!-- Color Menus -->
@@ -531,11 +538,10 @@ function handleTableContextMenu(e) {
     btn.style.display = "block";
     btn.style.margin = "2px 0";
     menu.appendChild(btn);
-  });
-
   document.body.appendChild(menu);
   document.addEventListener("click", () => {
-    if (menu.parentNode) menu.remove();
+  if (menu.parentNode) menu.remove();
+}, { once: true });
   }, { once: true });
 }
 </script>
@@ -605,7 +611,7 @@ function insertColRight(table, colIndex) {
     newCell.style.border = "1px solid #ccc";
     newCell.style.padding = "5px";
     newCell.contentEditable = true;
-  });
+}
   const colgroup = table.querySelector("colgroup");
   if (colgroup) {
     const newCol = document.createElement("col");
@@ -617,63 +623,60 @@ function insertColRight(table, colIndex) {
 </script>
 
 
+
+
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  const editor = document.getElementById("editor");
-  function updatePlaceholder() {
-    editor.classList.toggle("empty", editor.innerHTML.trim() === "" || editor.innerHTML === "<br>");
+function makeTableResizable(table) {
+
+    function onMouseUp() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+  // Add table resizer (bottom right corner)
+  const corner = document.createElement("div");
+  corner.style.width = "12px";
+  corner.style.height = "12px";
+  corner.style.background = "#999";
+  corner.style.position = "absolute";
+  corner.style.right = "0";
+  corner.style.bottom = "0";
+  corner.style.cursor = "nwse-resize";
+  corner.style.zIndex = "20";
+  corner.style.border = "2px solid white";
+  if (table) table.style.position = "relative";
+  table.appendChild(corner);
+
+  let startW, startH, startMouseX, startMouseY;
+
+  corner.addEventListener("mousedown", function (e) {
+    startW = table.offsetWidth;
+    startH = table.offsetHeight;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+
+    function resizeTable(e) {
+      table.style.width = startW + (e.clientX - startMouseX) + "px";
+      table.style.height = startH + (e.clientY - startMouseY) + "px";
+    }
+
+    function stopResizeTable() {
+      document.removeEventListener("mousemove", resizeTable);
+      document.removeEventListener("mouseup", stopResizeTable);
+    }
+
+    document.addEventListener("mousemove", resizeTable);
+    document.addEventListener("mouseup", stopResizeTable);
+    }
   }
-  editor.setAttribute("data-placeholder", "Start writing your KB article here...");
-  updatePlaceholder();
-  editor.addEventListener("input", updatePlaceholder);
-});
 </script>
 
+
 <script>
-function makeTableResizable(table) {
-  const colgroup = table.querySelector("colgroup");
-  const cols = colgroup ? colgroup.children : [];
-  const firstRow = table.rows[0];
-  if (!firstRow) return;
-
-  [...cols].forEach((col, index) => {
-    const cell = firstRow.cells[index];
-    if (!cell) return;
-
-    const resizer = document.createElement("div");
-    resizer.style.width = "6px";
-    resizer.style.cursor = "col-resize";
-    resizer.style.position = "absolute";
-    resizer.style.top = "0";
-    resizer.style.right = "0";
-    resizer.style.bottom = "0";
-    resizer.style.zIndex = "10";
-    resizer.style.userSelect = "none";
-    resizer.style.backgroundColor = "#ccc";
-    cell.style.position = "relative";
-    cell.appendChild(resizer);
-
-    let startX, startWidth;
-
-    resizer.addEventListener("mousedown", function (e) {
-      startX = e.clientX;
-      startWidth = parseInt(window.getComputedStyle(col).width, 10);
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      e.preventDefault();
-    });
-
-    function onMouseMove(e) {
-      const delta = e.clientX - startX;
-      col.style.width = (startWidth + delta) + "px";
-    }
 
     function onMouseUp() {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     }
-  });
-
   // Add table resizer (bottom right corner)
   const corner = document.createElement("div");
   corner.style.width = "12px";
@@ -685,7 +688,7 @@ function makeTableResizable(table) {
   corner.style.cursor = "nwse-resize";
   corner.style.zIndex = "20";
   corner.style.border = "2px solid white";
-  table.style.position = "relative";
+  if (table) table.style.position = "relative";
   table.appendChild(corner);
 
   let startW, startH, startMouseX, startMouseY;
@@ -708,94 +711,8 @@ function makeTableResizable(table) {
 
     document.addEventListener("mousemove", resizeTable);
     document.addEventListener("mouseup", stopResizeTable);
-    e.preventDefault();
-  });
-}
-</script>
-
-
-<script>
-function makeTableResizable(table) {
-  const colgroup = table.querySelector("colgroup");
-  const cols = colgroup ? colgroup.children : [];
-  const firstRow = table.rows[0];
-  if (!firstRow) return;
-
-  [...cols].forEach((col, index) => {
-    const cell = firstRow.cells[index];
-    if (!cell) return;
-
-    const resizer = document.createElement("div");
-    resizer.style.width = "6px";
-    resizer.style.cursor = "col-resize";
-    resizer.style.position = "absolute";
-    resizer.style.top = "0";
-    resizer.style.right = "0";
-    resizer.style.bottom = "0";
-    resizer.style.zIndex = "10";
-    resizer.style.userSelect = "none";
-    resizer.style.backgroundColor = "#ccc";
-    cell.style.position = "relative";
-    cell.appendChild(resizer);
-
-    let startX, startWidth;
-
-    resizer.addEventListener("mousedown", function (e) {
-      startX = e.clientX;
-      startWidth = parseInt(window.getComputedStyle(col).width, 10);
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
-      e.preventDefault();
-    });
-
-    function onMouseMove(e) {
-      const delta = e.clientX - startX;
-      col.style.width = (startWidth + delta) + "px";
     }
-
-    function onMouseUp() {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
-  });
-
-  // Add table resizer (bottom right corner)
-  const corner = document.createElement("div");
-  corner.style.width = "12px";
-  corner.style.height = "12px";
-  corner.style.background = "#999";
-  corner.style.position = "absolute";
-  corner.style.right = "0";
-  corner.style.bottom = "0";
-  corner.style.cursor = "nwse-resize";
-  corner.style.zIndex = "20";
-  corner.style.border = "2px solid white";
-  table.style.position = "relative";
-  table.appendChild(corner);
-
-  let startW, startH, startMouseX, startMouseY;
-
-  corner.addEventListener("mousedown", function (e) {
-    startW = table.offsetWidth;
-    startH = table.offsetHeight;
-    startMouseX = e.clientX;
-    startMouseY = e.clientY;
-
-    function resizeTable(e) {
-      table.style.width = startW + (e.clientX - startMouseX) + "px";
-      table.style.height = startH + (e.clientY - startMouseY) + "px";
-    }
-
-    function stopResizeTable() {
-      document.removeEventListener("mousemove", resizeTable);
-      document.removeEventListener("mouseup", stopResizeTable);
-    }
-
-    document.addEventListener("mousemove", resizeTable);
-    document.addEventListener("mouseup", stopResizeTable);
-    e.preventDefault();
-  });
-}
+  }
 </script>
 
 
@@ -844,8 +761,6 @@ function makeTableResizable(table) {
   <button onclick="document.getElementById('hyperlinkModal').style.display='none'">Cancel</button>
 </div>
 <script>
-let savedRangeForLink = null;
-
 function openHyperlinkModal(existingLink = null) {
   const sel = window.getSelection();
   if (sel.rangeCount > 0) {
@@ -867,8 +782,6 @@ function openHyperlinkModal(existingLink = null) {
   }
 
   modal.style.display = "block";
-});
-
 function showImageContextMenu(img, x, y) {
   const menu = createContextMenu(x, y);
   menu.appendChild(createMenuItem("📝 Update Image", () => openImageModal(img)));
@@ -911,27 +824,8 @@ function createMenuItem(text, action) {
 }
 
 // Patch modals to support update mode
-function openImageModal(existingImg = null) {
-  savedRangeForImage = null;
-  const modal = document.getElementById("imageModal");
 
-  if (existingImg) {
-    document.getElementById("imgSrc").value = existingImg.src;
-    document.getElementById("imgAlt").value = existingImg.alt;
-    document.getElementById("imgTitle").value = existingImg.title;
-    document.getElementById("imgWidth").value = existingImg.width;
-    document.getElementById("imgHeight").value = existingImg.height;
-
-    modal.setAttribute("data-editing", "true");
-    modal._imgRef = existingImg;
-  } else {
-    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
-    modal.removeAttribute("data-editing");
-    modal._imgRef = null;
-  }
-
-  modal.style.display = "block";
-});
+}
 </script>
 
 
@@ -965,7 +859,6 @@ function openImageModal(existingImg = null) {
 
 
 <script>
-let savedRangeForLink = null;
 function openHyperlinkModal(existingLink = null) {
   const sel = window.getSelection();
   if (sel.rangeCount > 0) {
@@ -990,6 +883,7 @@ function openHyperlinkModal(existingLink = null) {
 }
 
 function applyHyperlink() {
+  if (!isInsideEditor()) { const editor = document.getElementById("editor"); editor.focus(); placeCursorAtEnd(editor); }
   const url = document.getElementById("linkUrl").value;
   const text = document.getElementById("linkText").value;
   const title = document.getElementById("linkTitle").value;
@@ -1034,29 +928,6 @@ function applyHyperlink() {
   modal.style.display = "none";
   update();
 }
-
-let savedRangeForImage = null;
-function openImageModal(existingImg = null) {
-  savedRangeForImage = null;
-  const modal = document.getElementById("imageModal");
-
-  if (existingImg) {
-    document.getElementById("imgSrc").value = existingImg.src;
-    document.getElementById("imgAlt").value = existingImg.alt;
-    document.getElementById("imgTitle").value = existingImg.title;
-    document.getElementById("imgWidth").value = existingImg.width;
-    document.getElementById("imgHeight").value = existingImg.height;
-
-    modal.setAttribute("data-editing", "true");
-    modal._imgRef = existingImg;
-  } else {
-    document.querySelectorAll("#imageModal input").forEach(i => i.value = "");
-    modal.removeAttribute("data-editing");
-    modal._imgRef = null;
-  }
-
-  modal.style.display = "block";
-});
 
 function showImageContextMenu(img, x, y) {
   const menu = createContextMenu(x, y);
@@ -1110,9 +981,6 @@ function createMenuItem(text, action) {
 
 
 <script>
-let savedRangeForLink = null;
-let savedRangeForImage = null;
-
 function openHyperlinkModal(existingLink = null) {
   const sel = window.getSelection();
   if (sel.rangeCount > 0) {
@@ -1136,6 +1004,7 @@ function openHyperlinkModal(existingLink = null) {
 }
 
 function applyHyperlink() {
+  if (!isInsideEditor()) { const editor = document.getElementById("editor"); editor.focus(); placeCursorAtEnd(editor); }
   const url = document.getElementById("linkUrl").value;
   const text = document.getElementById("linkText").value;
   const title = document.getElementById("linkTitle").value;
@@ -1225,22 +1094,29 @@ function applyImage() {
   img.src = src;
   img.alt = alt;
   img.title = title;
+  // force visibility for debugging
   if (width) img.setAttribute("width", width); else img.removeAttribute("width");
   if (height) img.setAttribute("height", height); else img.removeAttribute("height");
 
-  if (!isEdit) {
-    const editor = document.getElementById("editor");
-    editor.focus();
-    const sel = window.getSelection();
-    if (!sel.rangeCount) {
-      const range = document.createRange();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
+  const editor = document.getElementById("editor");
+  editor.focus();
 
-    const range = sel.getRangeAt(0);
+  const sel = window.getSelection();
+  let range;
+
+  if (isEdit) {
+    console.log("Editing existing image", img);
+  } else if (savedRangeForImage) {
+    sel.removeAllRanges();
+    sel.addRange(savedRangeForImage);
+    range = savedRangeForImage;
+  } else {
+    placeCursorAtEnd(editor);
+    range = window.getSelection().getRangeAt(0);
+  }
+
+  if (!isEdit && range) {
+    console.log("Inserting new image", img);
     range.deleteContents();
     range.insertNode(img);
     sel.removeAllRanges();
@@ -1297,8 +1173,6 @@ document.addEventListener("contextmenu", function(e) {
     e.preventDefault();
     showLinkContextMenu(target, e.pageX, e.pageY);
   }
-});
-
 function openImageModal(existingImg = null) {
   console.log("openImageModal triggered");
   const sel = window.getSelection();
@@ -1326,7 +1200,6 @@ function openImageModal(existingImg = null) {
   modal.style.zIndex = 10000;
 }
 </script>
-
 
 <script>
 function showImageContextMenu(img, x, y) {
@@ -1363,15 +1236,14 @@ function showImageContextMenu(img, x, y) {
     btn.style.width = "100%";
     btn.style.margin = "4px 0";
     menu.appendChild(btn);
-  });
-
   // Remove any existing menu and show new one
   const existing = document.getElementById("customContextMenu");
   if (existing) existing.remove();
   document.body.appendChild(menu);
 
   document.addEventListener("click", () => {
-    if (menu.parentNode) menu.remove();
+  if (menu.parentNode) menu.remove();
+}, { once: true });
   }, { once: true });
 }
 </script>
@@ -1412,24 +1284,19 @@ function showLinkContextMenu(link, x, y) {
     btn.style.width = "100%";
     btn.style.margin = "4px 0";
     menu.appendChild(btn);
-  });
-
   const existing = document.getElementById("customContextMenu");
   if (existing) existing.remove();
   document.body.appendChild(menu);
 
   document.addEventListener("click", () => {
-    if (menu.parentNode) menu.remove();
+  if (menu.parentNode) menu.remove();
+}, { once: true });
   }, { once: true });
 }
 </script>
 
-</body>
-</html>
 
 <script>
-let savedRangeForImage = null;
-
 function openImageModal(existingImg = null) {
   const sel = window.getSelection();
   if (sel.rangeCount > 0) {
@@ -1472,22 +1339,29 @@ function applyImage() {
   img.src = src;
   img.alt = alt;
   img.title = title;
+  // force visibility for debugging
   if (width) img.setAttribute("width", width); else img.removeAttribute("width");
   if (height) img.setAttribute("height", height); else img.removeAttribute("height");
 
-  if (!isEdit) {
-    const editor = document.getElementById("editor");
-    editor.focus();
-    const sel = window.getSelection();
-    if (!sel.rangeCount) {
-      const range = document.createRange();
-      range.selectNodeContents(editor);
-      range.collapse(false);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
+  const editor = document.getElementById("editor");
+  editor.focus();
 
-    const range = sel.getRangeAt(0);
+  const sel = window.getSelection();
+  let range;
+
+  if (isEdit) {
+    console.log("Editing existing image", img);
+  } else if (savedRangeForImage) {
+    sel.removeAllRanges();
+    sel.addRange(savedRangeForImage);
+    range = savedRangeForImage;
+  } else {
+    placeCursorAtEnd(editor);
+    range = window.getSelection().getRangeAt(0);
+  }
+
+  if (!isEdit && range) {
+    console.log("Inserting new image", img);
     range.deleteContents();
     range.insertNode(img);
     sel.removeAllRanges();
@@ -1500,3 +1374,125 @@ function applyImage() {
   update();
 }
 </script>
+
+
+<script>
+function isInsideEditor() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return false;
+  const node = sel.getRangeAt(0).commonAncestorContainer;
+  return document.getElementById("editor").contains(node);
+}
+</script>
+
+
+<script>
+function isInsideEditor() {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return false;
+  const node = sel.getRangeAt(0).commonAncestorContainer;
+  return document.getElementById("editor").contains(node);
+}
+
+function placeCursorAtEnd(el) {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+</script>
+
+
+<script>
+function applyImage() {
+  const src = document.getElementById("imgSrc").value;
+  const alt = document.getElementById("imgAlt").value;
+  const title = document.getElementById("imgTitle").value;
+  const width = document.getElementById("imgWidth").value;
+  const height = document.getElementById("imgHeight").value;
+
+  if (!src) {
+    alert("Image Source is required.");
+    return;
+  }
+
+  const modal = document.getElementById("imageModal");
+  const isEdit = modal.getAttribute("data-editing") === "true";
+  const img = isEdit ? modal._imgRef : document.createElement("img");
+
+  img.src = src;
+  img.alt = alt;
+  img.title = title;
+  if (width) img.setAttribute("width", width); else img.removeAttribute("width");
+  if (height) img.setAttribute("height", height); else img.removeAttribute("height");
+
+  const editor = document.getElementById("editor");
+  editor.focus();
+
+  const sel = window.getSelection();
+  let range;
+
+  if (isEdit) {
+    console.log("Editing existing image", img);
+  } else if (savedRangeForImage) {
+    sel.removeAllRanges();
+    sel.addRange(savedRangeForImage);
+    range = savedRangeForImage;
+  } else {
+    placeCursorAtEnd(editor);
+    range = window.getSelection().getRangeAt(0);
+  }
+
+  if (!isEdit && range) {
+    console.log("Inserting new image", img);
+    range.deleteContents();
+    range.insertNode(img);
+    sel.removeAllRanges();
+    sel.selectAllChildren(img);
+  }
+
+  modal.removeAttribute("data-editing");
+  modal._imgRef = null;
+  modal.style.display = "none";
+  update();
+}
+</script>
+
+<script>
+function insertAccordion() {
+  const editor = document.getElementById("editor");
+  if (!isInsideEditor()) {
+    editor.focus();
+    placeCursorAtEnd(editor);
+  }
+
+  const container = document.createElement("div");
+  container.className = "accordion";
+  container.innerHTML = `
+    <button class="accordion-toggle">▶ Section</button>
+    <div class="accordion-content" style="display: none; margin-top: 5px;">
+      <p>Accordion content goes here...</p>
+    </div>
+  `;
+
+  container.querySelector(".accordion-toggle").onclick = function () {
+    const content = this.nextElementSibling;
+    const isVisible = content.style.display === "block";
+    content.style.display = isVisible ? "none" : "block";
+    this.textContent = isVisible ? "▶ Section" : "▼ Section";
+  };
+
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(container);
+  sel.removeAllRanges();
+  sel.selectAllChildren(container);
+  update();
+}
+</script>
+</body>
+</html>
