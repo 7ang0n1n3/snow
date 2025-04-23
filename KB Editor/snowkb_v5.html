@@ -113,7 +113,11 @@
     position: relative;
   }
 </style>
-<script>let savedRangeForLink = null; let savedRangeForImage = null;</script>
+<script>
+function closeMenus() {
+  document.querySelectorAll('.color-menu').forEach(menu => menu.style.display = 'none');
+}
+let savedRangeForLink = null; let savedRangeForImage = null;</script>
 </head>
 <body>
 
@@ -1494,5 +1498,84 @@ function insertAccordion() {
   update();
 }
 </script>
+
+<script>
+function makeTableResizable(table) {
+  const cols = table.querySelectorAll("col");
+  cols.forEach((col, index) => {
+    const resizer = document.createElement("div");
+    resizer.style.width = "5px";
+    resizer.style.cursor = "col-resize";
+    resizer.style.position = "absolute";
+    resizer.style.right = "0";
+    resizer.style.top = "0";
+    resizer.style.bottom = "0";
+    resizer.style.zIndex = "1";
+
+    const cell = table.rows[0].cells[index];
+    cell.style.position = "relative";
+    cell.appendChild(resizer);
+
+    resizer.addEventListener("mousedown", function initResize(e) {
+      e.preventDefault();
+      function resize(ev) {
+        const newWidth = ev.clientX - cell.getBoundingClientRect().left;
+        col.style.width = newWidth + "px";
+      }
+      function stopResize() {
+        window.removeEventListener("mousemove", resize);
+        window.removeEventListener("mouseup", stopResize);
+      }
+
+      window.addEventListener("mousemove", resize);
+      window.addEventListener("mouseup", stopResize);
+    });
+  });
+}
+
+function insertTable(rows, cols) {
+  closeMenus();
+  const table = document.createElement("table");
+  table.style.borderCollapse = "collapse";
+  table.style.margin = "10px 0";
+  table.style.width = "100%";
+  table.style.border = "1px solid #ccc";
+  table.classList.add("resizable-table");
+  table.setAttribute("draggable", false);
+  table.oncontextmenu = handleTableContextMenu;
+
+  const colgroup = document.createElement("colgroup");
+  for (let j = 0; j < cols; j++) {
+    const col = document.createElement("col");
+    col.style.width = `${100 / cols}%`;
+    colgroup.appendChild(col);
+  }
+  table.appendChild(colgroup);
+
+  for (let i = 0; i < rows; i++) {
+    const tr = document.createElement("tr");
+    for (let j = 0; j < cols; j++) {
+      const td = document.createElement("td");
+      td.textContent = "Cell";
+      td.style.border = "1px solid #ccc";
+      td.style.padding = "5px";
+      td.contentEditable = true;
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(table);
+  sel.removeAllRanges();
+  sel.selectAllChildren(table);
+  makeTableResizable(table);
+  update();
+}
+</script>
+
 </body>
 </html>
