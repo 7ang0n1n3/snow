@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>SNOW KB Editor</title>
+  <title>SNOW KB Editor – Save & Load</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -97,32 +97,19 @@
       display: none;
     }
   </style>
-
-<style>
-  #editor.empty::before {
-    content: attr(data-placeholder);
-    color: #ccc;
-    position: absolute;
-    pointer-events: none;
-    padding: 10px;
-  }
-  #editor {
-    position: relative;
-  }
-</style>
 </head>
 <body>
 
-<header>📝 SNOW KB Editor</header>
+<header>📝 SNOW KB Editor – Save & Load</header>
 
-<!-- Toolbar Row Core Functions -->
+<!-- Toolbar Row 0 -->
 <div class="toolbar-row">
   <button onclick="saveContent()">💾 Save</button>
   <button onclick="document.getElementById('fileInput').click()">📂 Load</button>
   <input type="file" id="fileInput" accept=".snowkb" onchange="loadContent(event)">
 </div>
 
-<!-- Toolbar Row Text Format -->
+<!-- Toolbar Row 1 -->
 <div class="toolbar-row">
   <label for="formatSelect">Format: </label>
   <select id="formatSelect" onchange="setFormat(this.value)">
@@ -161,31 +148,30 @@
     <option value="40pt">40pt</option>
   </select>
 
+  <button onclick="insertAccordion()">📂 Accordion Section</button>
   <button onclick="exec('bold')"><b>B</b></button>
   <button onclick="exec('italic')"><i>I</i></button>
   <button onclick="exec('underline')"><u>U</u></button>
   <button onclick="exec('strikeThrough')"><s>S</s></button>
   <button onclick="toggleColorMenu(this)">🖌️ Text Color</button>
   <button onclick="toggleHighlightMenu(this)">🖍️ Highlight</button>
-  <button onclick="exec('outdent')">➖ Indent</button>
-  <button onclick="exec('indent')">➕ Indent</button>
-  <button onclick="exec('justifyLeft')">⬅️ Left</button>
-  <button onclick="exec('justifyCenter')">↔️ Center</button>
-  <button onclick="exec('justifyRight')">➡️ Right</button>
-
 </div>
 
-<!-- Toolbar Row Functions -->
+<!-- Toolbar Row 2 -->
 <div class="toolbar-row">
-  <button onclick="insertAccordion()">📂 Accordion Section</button>
+  <button onclick="exec('outdent')">➖ Decrease Indent</button>
+  <button onclick="exec('indent')">➕ Increase Indent</button>
+  <button onclick="exec('justifyLeft')">⬅️ Align Left</button>
+  <button onclick="exec('justifyCenter')">↔️ Align Center</button>
+  <button onclick="exec('justifyRight')">➡️ Align Right</button>
 </div>
 
 <!-- Panels -->
 <div class="panel">
   <div class="panel-header">Editor</div>
   <div class="panel-body">
-    <div id="editor" contenteditable="true" class="empty" oninput="update()">
-      <p><br></p>
+    <div id="editor" contenteditable="true" oninput="update()">
+      <p>Start writing your KB article here...</p>
     </div>
   </div>
 </div>
@@ -410,20 +396,6 @@ update();
   <div class="color-swatch" style="background: cyan;" onclick="setHighlight('cyan')"></div>
   <div class="color-swatch" style="background: plum;" onclick="setHighlight('plum')"></div>
 </div>
-
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-  const editor = document.getElementById("editor");
-  function updatePlaceholder() {
-    editor.classList.toggle("empty", editor.innerHTML.trim() === "" || editor.innerHTML === "<br>");
-  }
-  editor.setAttribute("data-placeholder", "Start writing your KB article here...");
-  updatePlaceholder();
-  editor.addEventListener("input", updatePlaceholder);
-});
-</script>
-
 
 </body>
 </html>
