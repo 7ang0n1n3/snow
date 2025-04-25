@@ -34,7 +34,7 @@
     }
     .toolbar-row button {
       background: white;
-      border: 1px solid #ccc;
+      border: 2px solid #ccc;
       border-radius: 4px;
     }
     .color-menu {
@@ -206,6 +206,20 @@
 <script>
 let savedRange = null;
 
+function focusEditor() {
+  const editor = document.getElementById("editor");
+  editor.focus();
+  const sel = window.getSelection();
+  if (!sel.rangeCount || !editor.contains(sel.anchorNode)) {
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+}
+
+
 function update() {
   const html = document.getElementById("editor").innerHTML;
   document.getElementById("preview").innerHTML = html;
@@ -213,6 +227,7 @@ function update() {
 }
 
 function exec(cmd) {
+  focusEditor();
   if (cmd === 'indent' || cmd === 'outdent') {
     adjustIndent(cmd === 'indent' ? 40 : -40);
     return;
@@ -252,6 +267,7 @@ function setFontSize(size) {
 }
 
 function insertAccordion() {
+  focusEditor();
   const sel = window.getSelection();
   if (!sel.rangeCount) return;
   const range = sel.getRangeAt(0);
