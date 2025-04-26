@@ -197,27 +197,7 @@
             padding: 10px;
         }
         
-        .merge-fields-panel {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f0f7ff;
-            border-radius: 4px;
-        }
         
-        .merge-tag {
-            display: inline-block;
-            background-color: #e1f0ff;
-            border: 1px solid #0078d4;
-            color: #0078d4;
-            padding: 2px 8px;
-            margin: 3px;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-        
-        .merge-tag:hover {
-            background-color: #d0e7ff;
-        }
     </style>
 </head>
 <body>
@@ -246,19 +226,7 @@
                         No templates yet
                     </div>
                 </div>
-                
-                <div class="merge-fields-panel">
-                    <h3>Merge Fields</h3>
-                    <p>Click to insert:</p>
-                    <div class="merge-tags">
-                        <span class="merge-tag" data-field="{{FirstName}}">First Name</span>
-                        <span class="merge-tag" data-field="{{LastName}}">Last Name</span>
-                        <span class="merge-tag" data-field="{{Company}}">Company</span>
-                        <span class="merge-tag" data-field="{{Position}}">Position</span>
-                        <span class="merge-tag" data-field="{{Date}}">Date</span>
-                        <span class="merge-tag" data-field="{{SenderName}}">Sender Name</span>
-                    </div>
-                </div>
+
             </div>
             
             <!-- Editor Container -->
@@ -387,7 +355,7 @@
                 editor.on('Change', function() {
                     scheduleAutoSave();
                 });
-            
+
             }
 
         });
@@ -966,21 +934,6 @@ ${template.content || ''}
             URL.revokeObjectURL(url);
         }
         
-        // Handle merge field insertion
-        function setupMergeFields() {
-            const mergeTags = document.querySelectorAll('.merge-tag');
-            
-            mergeTags.forEach(tag => {
-                tag.addEventListener('click', () => {
-                    const field = tag.dataset.field;
-                    const editor = tinymce.get('email-content');
-                    
-                    if (editor) {
-                        editor.execCommand('mceInsertContent', false, field);
-                    }
-                });
-            });
-        }
         
         // Set up event listeners
         function setupEventListeners() {
@@ -1019,8 +972,6 @@ ${template.content || ''}
                 renderTemplatesList(e.target.value);
             });
             
-            // Setup merge fields
-            setupMergeFields();
         }
         
         // Initialize the app
