@@ -267,13 +267,8 @@
                                 <label for="template-category">Category</label>
                                 <select id="template-category">
                                     <option value="">-- Select Category --</option>
-                                    <option value="business">Business</option>
-                                    <option value="sales">Sales</option>
                                     <option value="support">Support</option>
-                                    <option value="marketing">Marketing</option>
                                     <option value="internal">Internal</option>
-                                    <option value="followup">Follow-up</option>
-                                    <option value="meeting">Meeting</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -344,12 +339,12 @@
             plugins: [
                 'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'accordion', 'wordcount'
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
             ],
             toolbar: 'undo redo | blocks | ' +
                 'bold italic backcolor | alignleft aligncenter ' +
                 'alignright alignjustify | bullist numlist outdent indent | ' +
-                'imageUpload | removeformat | help',
+                'imageUpload | help',
             content_style: 'body { font-family:Arial,sans-serif; font-size:14px }',
             setup: function(editor) {
                 editor.on('Change', function() {
