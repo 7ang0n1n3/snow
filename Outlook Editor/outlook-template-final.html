@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outlook Template Maker</title>
+<script src="tinymce/tinymce.min.js"></script>
+<style>
+body { font-family: Arial, sans-serif; background: linear-gradient(to top, #0078d4, #50b0f9); background-attachment: fixed; }
+.container { max-width: 1200px; margin: auto; padding: 20px; }
+header { display: flex; justify-content: space-between; background-color: #0078d4; color: white; padding: 15px 20px; border-radius: 5px 5px 0 0; }
+textarea { width: 100%; height: 400px; }
+button { background-color: #0078d4; color: white; border: none; padding: 10px; border-radius: 5px; margin-top: 10px; cursor: pointer; }
+button:hover { background-color: #106ebe; }
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Outlook Template Maker</h1>
+<button id="export-btn">Save .EML</button>
+</header>
+<textarea id="email-content"></textarea>
+<div id="export-status" style="margin-top:10px; font-weight:bold;"></div>
+</div>
+
+<script>
+tinymce.init({
+  selector: '#email-content',
+  height: 400,
+  plugins: 'image link lists',
+  toolbar: 'undo redo | styles | bold italic | alignleft aligncenter alignright alignjustify | outdent indent | imageUpload',
+  setup: function(editor) {
+    editor.ui.registry.addButton('imageUpload', {
+      text: 'Insert Image',
+      onAction: function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            editor.insertContent('<img src="' + event.target.result + '" style="max-width:100%;" />');
+          };
+          if (file) reader.readAsDataURL(file);
+        };
+        input.click();
+      }
+    });
+  }
+});
+
+function extractImagesFromHtml(html) {
+  const imgRegex = /<img[^>]+src=["'](data:image\/[^"']+)["'][^>]*>/g;
+  let match;
+  const images = [];
+  let cleanHtml = html;
+  let counter = 1;
+  while ((match = imgRegex.exec(html)) !== null) {
+    const base64Data = match[1];
+    const cid = `image${counter}@outlook`;
+    images.push({ cid: cid, base64: base64Data });
+    cleanHtml = cleanHtml.replace(base64Data, `cid:${cid}`);
+    counter++;
+  }
+  return { cleanHtml, images };
+}
+
+function generateEmlWithImages(subject, htmlContent) {
+  const { cleanHtml, images } = extractImagesFromHtml(htmlContent);
+  const boundary = "----=_NextPart_" + Math.random().toString(36).substring(2);
+  const date = new Date().toUTCString();
+  let emlContent = `Date: ${date}
+From: user@example.com
+To: recipient@example.com
+Subject: ${subject}
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="${boundary}"
+
+--${boundary}
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+${cleanHtml}
+`;
+  images.forEach(img => {
+    const base64Body = img.base64.split(',')[1];
+    const mimeType = img.base64.match(/^data:(image\/[^;]+);base64,/)[1];
+    emlContent += `
+--${boundary}
+Content-Type: ${mimeType}
+Content-Transfer-Encoding: base64
+Content-ID: <${img.cid}>
+
+${base64Body}
+`;
+  });
+  emlContent += `
+--${boundary}--`;
+  return emlContent;
+}
+
+document.getElementById('export-btn').addEventListener('click', function() {
+  const editor = tinymce.get('email-content');
+  if (!editor) return;
+  const content = editor.getContent();
+  const subject = prompt('Enter Subject for Email (will also be file name):', 'Email Template') || 'EmailTemplate';
+  document.getElementById('export-status').innerText = 'Preparing download...';
+  setTimeout(() => {
+    const eml = generateEmlWithImages(subject, content);
+    const blob = new Blob([eml], { type: 'message/rfc822' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = subject.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.eml';
+    a.click();
+    URL.revokeObjectURL(url);
+    document.getElementById('export-status').innerText = 'Download ready!';
+  }, 500);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="application-name" content="Outlook Template Maker">
+    <meta name="version" content="1.0">
+    <meta name="description" content="Create and manage Outlook email templates">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outlook Template Maker</title>
+    <script src="tinymce/tinymce.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: linear-gradient(to top, #0078d4, #50b0f9);
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0078d4;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        
+        .main-content {
+            display: flex;
+            background-color: #ffffff;
+            border-radius: 0 0 5px 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            width: 300px;
+            padding: 20px;
+            border-right: 1px solid #eee;
+            background-color: #f5f5f5;
+        }
+        
+        .editor-container {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        button {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background-color: #106ebe;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        
+        .btn-danger {
+            background-color: #d83b01;
+        }
+        
+        .btn-success {
+            background-color: #107c10;
+        }
+        
+        .template-list {
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .template-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            background-color: #ffffff;
+        }
+        
+        .template-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .template-item.active {
+            background-color: #e3f2fd;
+            border-left-color: #0078d4;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .metadata {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .toolbar {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .search-box {
+            margin-bottom: 15px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 5px;
+            color: white;
+        }
+        
+        .status-draft {
+            background-color: #ff8c00;
+        }
+        
+        .status-ready {
+            background-color: #0078d4;
+        }
+        
+        .status-active {
+            background-color: #107c10;
+        }
+        
+        .email-header {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .preview-mode {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .preview-header {
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+        
+        .preview-body {
+            padding: 10px;
+        }
+        
+        .merge-fields-panel {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f0f7ff;
+            border-radius: 4px;
+        }
+        
+        .merge-tag {
+            display: inline-block;
+            background-color: #e1f0ff;
+            border: 1px solid #0078d4;
+            color: #0078d4;
+            padding: 2px 8px;
+            margin: 3px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .merge-tag:hover {
+            background-color: #d0e7ff;
+        }
+        
+        .image-preview {
+            max-width: 300px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            display: block;
+        }
+        
+        .upload-progress {
+            height: 5px;
+            background-color: #e1e1e1;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .upload-progress-bar {
+            height: 100%;
+            background-color: #0078d4;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Outlook Template Maker</h1>
+            <div>
+                <button id="import-btn" class="btn-secondary">Load .EMLTPL</button>
+                <button id="export-btn">Save .EMLTPL</button>
+                <button id="export-msg-btn">Export .EMLTPL</button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="search-box">
+                    <input type="text" id="search-templates" placeholder="Search templates...">
+                </div>
+                
+                <button id="new-template-btn" style="width: 100%;">Create New Template</button>
+                
+                <div class="template-list" id="templates-list">
+                    <!-- Templates will be listed here -->
+                    <div style="text-align: center; color: #6c757d; padding: 20px;">
+                        No templates yet
+                    </div>
+                </div>
+                
+                <div class="merge-fields-panel">
+                    <h3>Merge Fields</h3>
+                    <p>Click to insert:</p>
+                    <div class="merge-tags">
+                        <span class="merge-tag" data-field="{{FirstName}}">First Name</span>
+                        <span class="merge-tag" data-field="{{LastName}}">Last Name</span>
+                        <span class="merge-tag" data-field="{{Company}}">Company</span>
+                        <span class="merge-tag" data-field="{{Position}}">Position</span>
+                        <span class="merge-tag" data-field="{{Date}}">Date</span>
+                        <span class="merge-tag" data-field="{{SenderName}}">Sender Name</span>
+                    </div>
+                </div>
+                
+                <div class="merge-fields-panel" style="margin-top: 15px;">
+                    <h3>Images</h3>
+                    <button id="insert-image-btn" style="width: 100%;">Insert Image</button>
+                    <div id="image-preview" class="image-preview" style="display: none;"></div>
+                    <div class="upload-progress" style="display: none;">
+                        <div class="upload-progress-bar"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Editor Container -->
+            <div class="editor-container">
+                <div id="editor-content">
+                    <div class="toolbar">
+                        <div>
+                            <button id="save-btn" class="btn-success">Save</button>
+                            <button id="delete-btn" class="btn-danger">Delete</button>
+                            <button id="preview-btn">Preview</button>
+                            <button id="insert-toolbar-image-btn">Insert Image</button>
+                            <span id="save-indicator" style="margin-left: 10px; color: black;"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="metadata">
+                        <div class="metadata-grid">
+                            <div class="form-group">
+                                <label for="template-id">Template ID</label>
+                                <div id="template-id" style="font-family: monospace;">OL0000000</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="template-status">Status</label>
+                                <select id="template-status">
+                                    <option value="draft">Draft</option>
+                                    <option value="ready">Ready to Use</option>
+                                    <option value="active">Active</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="template-name">Template Name</label>
+                            <input type="text" id="template-name" placeholder="Enter template name">
+                        </div>
+                        
+                        <div class="metadata-grid">
+                            <div class="form-group">
+                                <label for="template-category">Category</label>
+                                <select id="template-category">
+                                    <option value="">-- Select Category --</option>
+                                    <option value="business">Business</option>
+                                    <option value="sales">Sales</option>
+                                    <option value="support">Support</option>
+                                    <option value="marketing">Marketing</option>
+                                    <option value="internal">Internal</option>
+                                    <option value="followup">Follow-up</option>
+                                    <option value="meeting">Meeting</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="template-language">Language</label>
+                                <select id="template-language">
+                                    <option value="en">English</option>
+                                    <option value="jp">Japanese</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="email-header">
+                        <div class="form-group">
+                            <label for="email-subject">Subject Line</label>
+                            <input type="text" id="email-subject" placeholder="Enter email subject">
+                        </div>
+                        
+                        <div class="metadata-grid">
+                            <div class="form-group">
+                                <label for="email-to">To</label>
+                                <input type="text" id="email-to" placeholder="Default recipient (optional)">
+                            </div>
+                            <div class="form-group">
+                                <label for="email-cc">CC</label>
+                                <input type="text" id="email-cc" placeholder="Default CC (optional)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email-content">Email Body</label>
+                        <textarea id="email-content"></textarea>
+                    </div>
+                    
+                    <!-- Preview Mode (Initially Hidden) -->
+                    <div id="preview-container" class="preview-mode" style="display: none;">
+                        <h3>Template Preview</h3>
+                        <div class="preview-header">
+                            <div><strong>Subject:</strong> <span id="preview-subject"></span></div>
+                            <div><strong>To:</strong> <span id="preview-to"></span></div>
+                            <div><strong>CC:</strong> <span id="preview-cc"></span></div>
+                        </div>
+                        <div id="preview-body" class="preview-body">
+                            <!-- Preview content will be inserted here -->
+                        </div>
+                        <button id="exit-preview-btn" style="margin-top: 15px;">Exit Preview</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Main app state
+        let templates = [];
+        let currentTemplateId = null;
+        let lastSaved = Date.now();
+        let isPreviewMode = false;
+        let currentImage = null;
+        
+        // Convert an image file to base64
+        function convertImageToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = () => {
+                    const base64String = reader.result;
+                    resolve(base64String);
+                };
+                
+                reader.onerror = (error) => {
+                    reject(error);
+                };
+                
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        // Handle image upload and insertion
+        function handleImageUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    // Show loading indicator
+                    const saveIndicator = document.getElementById('save-indicator');
+                    if (saveIndicator) saveIndicator.textContent = 'Processing image...';
+                    
+                    // Show progress
+                    const progressContainer = document.querySelector('.upload-progress');
+                    const progressBar = document.querySelector('.upload-progress-bar');
+                    if (progressContainer) progressContainer.style.display = 'block';
+                    if (progressBar) {
+                        progressBar.style.width = '50%';
+                        setTimeout(() => { progressBar.style.width = '90%'; }, 300);
+                    }
+                    
+                    // Convert image to base64
+                    const base64Image = await convertImageToBase64(file);
+                    currentImage = base64Image;
+                    
+                    // Show preview
+                    const previewContainer = document.getElementById('image-preview');
+                    if (previewContainer) {
+                        previewContainer.style.display = 'block';
+                        previewContainer.innerHTML = `<img src="${base64Image}" alt="Preview" />`;
+                    }
+                    
+                    // Insert the base64 image into TinyMCE
+                    const editor = tinymce.get('email-content');
+                    if (editor) {
+                        editor.execCommand('mceInsertContent', false, `<img src="${base64Image}" alt="Embedded Image" />`);
+                    }
+                    
+                    // Update progress and clear indicators
+                    if (progressBar) progressBar.style.width = '100%';
+                    if (saveIndicator) {
+                        saveIndicator.textContent = 'Image inserted!';
+                        setTimeout(() => {
+                            saveIndicator.textContent = '';
+                        }, 2000);
+                    }
+                    
+                    // Hide progress after completion
+                    setTimeout(() => {
+                        if (progressContainer) progressContainer.style.display = 'none';
+                        if (progressBar) progressBar.style.width = '0%';
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Error processing image:', error);
+                    alert('Failed to process image. Please try again with a smaller image.');
+                    
+                    // Hide progress
+                    const progressContainer = document.querySelector('.upload-progress');
+                    if (progressContainer) progressContainer.style.display = 'none';
+                }
+            };
+            
+            input.click();
+        }
+        
+        // Initialize TinyMCE WYSIWYG editor
+        tinymce.init({
+            branding: false,
+            license_key: 'gpl',
+            selector: '#email-content',
+            height: 400,
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'accordion', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | ' +
+                'bold italic backcolor | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'image customimage | removeformat | help',
+            content_style: 'body { font-family:Arial,sans-serif; font-size:14px }',
+            setup: function(editor) {
+                editor.on('Change', function() {
+                    scheduleAutoSave();
+                });
+                
+                // Add custom image button for base64 images
+                editor.ui.registry.addButton('customimage', {
+                    icon: 'image',
+                    tooltip: 'Insert image as base64',
+                    onAction: handleImageUpload
+                });
+            }
+        });
+        
+        // DOM elements
+        const templatesList = document.getElementById('templates-list');
+        const searchInput = document.getElementById('search-templates');
+        const saveIndicator = document.getElementById('save-indicator');
+        const templateIdEl = document.getElementById('template-id');
+        const previewContainer = document.getElementById('preview-container');
+        const editorContent = document.getElementById('editor-content');
+        
+        // Form fields
+        const nameInput = document.getElementById('template-name');
+        const categorySelect = document.getElementById('template-category');
+        const statusSelect = document.getElementById('template-status');
+        const languageSelect = document.getElementById('template-language');
+        const emailSubject = document.getElementById('email-subject');
+        const emailTo = document.getElementById('email-to');
+        const emailCC = document.getElementById('email-cc');
+        
+        // Preview elements
+        const previewSubject = document.getElementById('preview-subject');
+        const previewTo = document.getElementById('preview-to');
+        const previewCC = document.getElementById('preview-cc');
+        const previewBody = document.getElementById('preview-body');
+        
+        // Buttons
+        const newTemplateBtn = document.getElementById('new-template-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const deleteBtn = document.getElementById('delete-btn');
+        const importBtn = document.getElementById('import-btn');
+        const exportBtn = document.getElementById('export-btn');
+        const exportMsgBtn = document.getElementById('export-msg-btn');
+        const previewBtn = document.getElementById('preview-btn');
+        const exitPreviewBtn = document.getElementById('exit-preview-btn');
+        const insertImageBtn = document.getElementById('insert-image-btn');
+        const insertToolbarImageBtn = document.getElementById('insert-toolbar-image-btn');
+        
+        // Load templates from localStorage
+        function loadTemplates() {
+            const saved = localStorage.getItem('outlook-email-templates');
+            templates = saved ? JSON.parse(saved) : [];
+            renderTemplatesList();
+        }
+        
+        // Save templates to localStorage
+        function saveTemplatesToStorage() {
+            localStorage.setItem('outlook-email-templates', JSON.stringify(templates));
+        }
+        
+        // Render the list of templates
+        function renderTemplatesList(searchTerm = '') {
+            templatesList.innerHTML = '';
+            
+            const filteredTemplates = searchTerm 
+                ? templates.filter(t => 
+                    t.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                    t.subject.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                : templates;
+                
+            if (filteredTemplates.length === 0) {
+                templatesList.innerHTML = `
+                    <div style="text-align: center; color: #6c757d; padding: 20px;">
+                        ${searchTerm ? 'No matching templates' : 'No templates yet'}
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort templates by last updated date (newest first)
+            filteredTemplates.sort((a, b) => b.updatedAt - a.updatedAt);
+            
+            filteredTemplates.forEach(template => {
+                const templateEl = document.createElement('div');
+                templateEl.className = `template-item ${template.id === currentTemplateId ? 'active' : ''}`;
+                templateEl.dataset.id = template.id;
+                
+                let statusClass = '';
+                let statusText = '';
+                
+                switch(template.status) {
+                    case 'draft':
+                        statusClass = 'status-draft';
+                        statusText = 'Draft';
+                        break;
+                    case 'ready':
+                        statusClass = 'status-ready';
+                        statusText = 'Ready';
+                        break;
+                    case 'active':
+                        statusClass = 'status-active';
+                        statusText = 'Active';
+                        break;
+                }
+                
+                templateEl.innerHTML = `
+                    <div style="font-weight: bold;">
+                        ${template.name || 'Untitled Template'}
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #6c757d; margin-top: 5px;">
+                        ${template.category ? template.category.charAt(0).toUpperCase() + template.category.slice(1) : 'No category'} · 
+                        Updated: ${new Date(template.updatedAt).toLocaleDateString()}
+                    </div>
+                    <div style="font-size: 12px; color: #444; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        Subject: ${template.subject || 'No subject'}
+                    </div>
+                `;
+                
+                templateEl.addEventListener('click', () => loadTemplate(template.id));
+                templatesList.appendChild(templateEl);
+            });
+        }
+        
+        // Create a new template
+        function createNewTemplate() {
+            const newTemplate = {
+                id: Date.now().toString(),
+                templateId: generateTemplateId(),
+                name: '',
+                category: '',
+                language: 'en',
+                status: 'draft',
+                subject: '',
+                to: '',
+                cc: '',
+                content: '',
+                hasImages: false,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+            
+            templates.push(newTemplate);
+            saveTemplatesToStorage();
+            loadTemplate(newTemplate.id);
+            renderTemplatesList();
+        }
+        
+        // Generate a template ID
+        function generateTemplateId() {
+            return `OL${Math.floor(Math.random() * 10000000).toString().padStart(7, '0')}`;
+        }
+        
+        // Load a template into the editor
+        function loadTemplate(id) {
+            // Only call exitPreviewMode if TinyMCE is initialized
+            if (tinymce.get('email-content')) {
+                exitPreviewMode();
+            }
+            
+            currentTemplateId = id;
+            const template = templates.find(t => t.id === id);
+            
+            if (template) {
+                templateIdEl.textContent = template.templateId;
+                nameInput.value = template.name || '';
+                categorySelect.value = template.category || '';
+                statusSelect.value = template.status || 'draft';
+                languageSelect.value = template.language || 'en';
+                emailSubject.value = template.subject || '';
+                emailTo.value = template.to || '';
+                emailCC.value = template.cc || '';
+                
+                // Update TinyMCE content if editor is initialized
+                const editor = tinymce.get('email-content');
+                if (editor) {
+                    editor.setContent(template.content || '');
+                }
+                
+                // Clear image preview
+                const previewContainer = document.getElementById('image-preview');
+                if (previewContainer) {
+                    previewContainer.style.display = 'none';
+                    previewContainer.innerHTML = '';
+                }
+                
+                // Update active template in the list
+                document.querySelectorAll('.template-item').forEach(el => {
+                    el.classList.toggle('active', el.dataset.id === id);
+                });
+            }
+        }
+        
+        // Save the current template
+        function saveCurrentTemplate() {
+            if (!currentTemplateId) return;
+            
+            const templateIndex = templates.findIndex(t => t.id === currentTemplateId);
+            if (templateIndex === -1) return;
+            
+            // Get content from TinyMCE
+            const content = tinymce.get('email-content').getContent();
+            
+            // Check if the template contains images
+            const hasImages = content.includes('<img');
+            
+            templates[templateIndex] = {
+                ...templates[templateIndex],
+                name: nameInput.value,
+                category: categorySelect.value,
+                status: statusSelect.value,
+                language: languageSelect.value,
+                subject: emailSubject.value,
+                to: emailTo.value,
+                cc: emailCC.value,
+                content: content,
+                hasImages: hasImages,
+                updatedAt: Date.now()
+            };
+            
+            saveTemplatesToStorage();
+            renderTemplatesList();
+            
+            // Show save confirmation
+            saveIndicator.textContent = 'Saved!';
+            setTimeout(() => {
+                saveIndicator.textContent = '';
+            }, 2000);
+        }
+        
+        // Schedule auto-save
+        function scheduleAutoSave() {
+            saveIndicator.textContent = 'Editing...';
+            
+            // Only save if more than 2 seconds since last save
+            if (Date.now() - lastSaved > 2000) {
+                saveCurrentTemplate();
+                lastSaved = Date.now();
+            }
+        }
+        
+        // Delete the current template
+        function deleteCurrentTemplate() {
+            if (!currentTemplateId) return;
+            
+            if (confirm('Are you sure you want to delete this template?')) {
+                templates = templates.filter(t => t.id !== currentTemplateId);
+                saveTemplatesToStorage();
+                
+                // Clear editor 
+                currentTemplateId = null;
+                templateIdEl.textContent = 'OL0000000';
+                nameInput.value = '';
+                categorySelect.value = '';
+                statusSelect.value = 'draft';
+                languageSelect.value = 'en';
+                emailSubject.value = '';
+                emailTo.value = '';
+                emailCC.value = '';
+                tinymce.get('email-content').setContent('');
+                
+                // Clear image preview
+                const imagePreview = document.getElementById('image-preview');
+                if (imagePreview) {
+                    imagePreview.style.display = 'none';
+                    imagePreview.innerHTML = '';
+                }
+                
+                renderTemplatesList();
+            }
+        }
+        
+        // Enter preview mode
+        function enterPreviewMode() {
+            if (!currentTemplateId) {
+                alert('Create or select a template first');
+                return;
+            }
+            
+            isPreviewMode = true;
+            
+            // Fill preview content
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (template) {
+                previewSubject.textContent = processMergeFields(template.subject);
+                previewTo.textContent = template.to;
+                previewCC.textContent = template.cc;
+                
+                // Process merge fields in content
+                let processedContent = processMergeFields(template.content);
+                previewBody.innerHTML = processedContent;
+                
+                // Show preview, hide editor
+                previewContainer.style.display = 'block';
+                // Hide other editor elements
+                document.querySelector('.metadata').style.display = 'none';
+                document.querySelector('.email-header').style.display = 'none';
+                document.querySelector('#email-content_parent').style.display = 'none'; // TinyMCE container
+            }
+        }
+        
+        // Exit preview mode
+        function exitPreviewMode() {
+            isPreviewMode = false;
+            
+            // Only try to hide/show elements if they exist
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+            }
+            
+            const metadata = document.querySelector('.metadata');
+            if (metadata) {
+                metadata.style.display = 'block';
+            }
+            
+            const emailHeader = document.querySelector('.email-header');
+            if (emailHeader) {
+                emailHeader.style.display = 'block';
+            }
+            
+            // TinyMCE might not be fully initialized when this runs
+            // so check if the element exists first
+            const editorParent = document.querySelector('#email-content_parent');
+            if (editorParent) {
+                editorParent.style.display = 'block';
+            }
+        }
+        
+        // Process merge fields in template
+        function processMergeFields(text) {
+            if (!text) return '';
+            
+            // Sample data for preview
+            const sampleData = {
+                '{{FirstName}}': 'John',
+                '{{LastName}}': 'Smith',
+                '{{Company}}': 'Acme Corporation',
+                '{{Position}}': 'Project Manager',
+                '{{Date}}': new Date().toLocaleDateString(),
+                '{{SenderName}}': 'Jane Doe'
+            };
+            
+            // Replace merge fields with sample data
+            let processed = text;
+            for (const [field, value] of Object.entries(sampleData)) {
+                processed = processed.replace(new RegExp(field, 'g'), value);
+            }
+            
+            return processed;
+        }
+        
+        // Export templates to EMLTPL files
+        function exportTemplates() {
+            if (templates.length === 0) {
+                alert('No templates to export');
+                return;
+            }
+            
+            if (!currentTemplateId) {
+                alert('Please select a template to export');
+                return;
+            }
+            
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+            
+            // Create RFC 5322 compliant email format (EML)
+            const date = new Date().toUTCString();
+            const boundary = "----=_NextPart_" + Math.random().toString(36).substring(2);
+            const plainTextContent = tinymce.get('email-content').getContent({format: 'text'}) || '';
+            
+            let emlContent = `Date: ${date}
+From: ${template.from || 'user@example.com'}
+To: ${template.to || ''}
+Cc: ${template.cc || ''}
+Subject: ${template.subject || '(No Subject)'}
+Thread-Topic: ${template.subject || '(No Subject)'}
+Thread-Index: ${Math.random().toString(36).substring(2)}==
+X-MS-Has-Attach: ${template.hasImages ? 'yes' : 'no'}
+Content-Language: ${template.language || 'en-US'}
+X-Template-ID: ${template.templateId}
+X-Template-Category: ${template.category || ''}
+X-Template-Name: ${template.name || ''}
+X-Template-Language: ${template.language || 'en'}
+X-Template-Status: ${template.status || 'draft'}
+Content-Type: multipart/alternative;
+\tboundary="${boundary}"
+MIME-Version: 1.0
+
+--${boundary}
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+${plainTextContent}
+
+--${boundary}
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+${template.content || ''}
+
+--${boundary}--
+`;
+            
+            // Create a Blob with the content
+            const blob = new Blob([emlContent], { type: 'message/rfc822' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create a link to download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${template.name || 'email-template'}.emltpl`;
+            link.click();
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+        }
+        
+        // Import templates from EMLTPL file
+        function importTemplates() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.eml,.emltpl';
+            
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const emlContent = event.target.result;
+                        
+                        // Parse the EML file content
+                        const parsedTemplate = parseEmlContent(emlContent);
+                        
+                        if (parsedTemplate) {
+                            // Check if we have HTML content
+                            if (!parsedTemplate.content || parsedTemplate.content.trim() === '') {
+                                alert('Warning: No HTML content found in the email template.');
+                            }
+                            
+                            // Create a new template from the parsed EML
+                            const newTemplate = {
+                                id: Date.now().toString(),
+                                templateId: parsedTemplate.templateId || generateTemplateId(),
+                                name: parsedTemplate.name || 'Imported Template',
+                                category: parsedTemplate.category || '',
+                                language: parsedTemplate.language || 'en',
+                                status: parsedTemplate.status || 'draft',
+                                subject: parsedTemplate.subject || '',
+                                to: parsedTemplate.to || '',
+                                cc: parsedTemplate.cc || '',
+                                content: parsedTemplate.content || '',
+                                hasImages: parsedTemplate.hasImages || false,
+                                createdAt: Date.now(),
+                                updatedAt: Date.now()
+                            };
+                            
+                            // Add warnings if applicable
+                            let warnings = [];
+                            if (parsedTemplate.hasImages) {
+                                warnings.push("This template contains embedded images.");
+                            }
+                            
+                            templates.push(newTemplate);
+                            saveTemplatesToStorage();
+                            loadTemplate(newTemplate.id);
+                            renderTemplatesList();
+                            
+                            let successMessage = 'Template successfully imported.';
+                            if (warnings.length > 0) {
+                                successMessage += '\n\nNotes:\n' + warnings.join('\n');
+                            }
+                            
+                            alert(successMessage);
+                        } else {
+                            alert('Invalid file format or unable to parse the content.');
+                        }
+                    } catch (err) {
+                        alert('Error importing file: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        // Parse EML content to extract template data
+        function parseEmlContent(emlContent) {
+            try {
+                // Basic email parser for EML format
+                const lines = emlContent.split('\n');
+                const template = {
+                    templateId: generateTemplateId(),
+                    name: '',
+                    category: '',
+                    language: 'en',
+                    status: 'draft',
+                    subject: '',
+                    to: '',
+                    cc: '',
+                    content: '',
+                    hasImages: false
+                };
+                
+                let inHeader = true;
+                let inHtmlContent = false;
+                let htmlContentLines = [];
+                let inBase64Content = false;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    
+                    // Parse headers
+                    if (inHeader) {
+                        if (line.trim() === '') {
+                            inHeader = false;
+                            continue;
+                        }
+                        
+                        // Extract basic email headers
+                        if (line.startsWith('Subject:')) {
+                            template.subject = line.substring('Subject:'.length).trim();
+                            template.name = "Template: " + template.subject;
+                        } else if (line.startsWith('To:')) {
+                            template.to = line.substring('To:'.length).trim();
+                        } else if (line.startsWith('Cc:') || line.startsWith('CC:')) {
+                            template.cc = line.substring(line.indexOf(':') + 1).trim();
+                        } else if (line.startsWith('Content-Language:')) {
+                            const lang = line.substring('Content-Language:'.length).trim();
+                            if (lang) {
+                                const langCode = lang.split('-')[0].toLowerCase();
+                                if (['en', 'jp'].includes(langCode)) {
+                                    template.language = langCode;
+                                }
+                            }
+                        } else if (line.startsWith('X-MS-Has-Attach: yes')) {
+                            template.hasImages = true;
+                        }
+                        
+                        // Extract custom headers with template metadata
+                        else if (line.startsWith('X-Template-ID:')) {
+                            template.templateId = line.substring('X-Template-ID:'.length).trim();
+                        } else if (line.startsWith('X-Template-Category:')) {
+                            template.category = line.substring('X-Template-Category:'.length).trim();
+                        } else if (line.startsWith('X-Template-Name:')) {
+                            template.name = line.substring('X-Template-Name:'.length).trim();
+                        } else if (line.startsWith('X-Template-Language:')) {
+                            template.language = line.substring('X-Template-Language:'.length).trim();
+                        } else if (line.startsWith('X-Template-Status:')) {
+                            template.status = line.substring('X-Template-Status:'.length).trim();
+                        }
+                    } 
+                    // Find content parts
+                    else {
+                        // Look for the HTML part in multipart emails
+                        if (line.includes('Content-Type: text/html')) {
+                            inHtmlContent = true;
+                            inBase64Content = line.includes('base64');
+                            
+                            // Skip the next few lines which are headers
+                            while (i < lines.length - 1 && !lines[i+1].includes('<html') && lines[i+1].trim() !== '') {
+                                i++;
+                            }
+                            continue;
+                        }
+                        
+                        // Check for embedded images
+                        if (line.includes('Content-Type: image/')) {
+                            template.hasImages = true;
+                        }
+                        
+                        // If we're in the HTML content part, collect it
+                        if (inHtmlContent) {
+                            // Check for boundary to stop collecting
+                            if (line.startsWith('--')) {
+                                inHtmlContent = false;
+                                inBase64Content = false;
+                            } else {
+                                htmlContentLines.push(line);
+                            }
+                        }
+                    }
+                }
+                
+                // Process the HTML content
+                if (htmlContentLines.length > 0) {
+                    let htmlContent = htmlContentLines.join('\n');
+                    
+                    // If content is base64 encoded, decode it
+                    if (inBase64Content) {
+                        try {
+                            htmlContent = atob(htmlContent.replace(/\s/g, ''));
+                        } catch (e) {
+                            console.error("Error decoding base64 content:", e);
+                        }
+                    }
+                    
+                    // Clean up the HTML content - handle quoted-printable encoding
+                    if (htmlContent.includes('=3D')) {
+                        htmlContent = htmlContent.replace(/=3D/g, '=');
+                        htmlContent = htmlContent.replace(/=\r\n/g, '');
+                        htmlContent = htmlContent.replace(/=([0-9A-F]{2})/g, (match, p1) => {
+                            return String.fromCharCode(parseInt(p1, 16));
+                        });
+                    }
+                    
+                    // Check for images
+                    if (htmlContent.includes('<img')) {
+                        template.hasImages = true;
+                    }
+                    
+                    template.content = htmlContent;
+                }
+                
+                // If no name was found, use the subject
+                if (!template.name && template.subject) {
+                    template.name = "Template: " + template.subject;
+                }
+                
+                return template;
+            } catch (error) {
+                console.error('Error parsing EML content:', error);
+                return null;
+            }
+        }
+        
+        // Export current template as .EMLTPL file format
+        function exportAsMsg() {
+            if (!currentTemplateId) {
+                alert('Please select a template to export');
+                return;
+            }
+            
+            const template = templates.find(t => t.id === currentTemplateId);
+            if (!template) return;
+            
+            // Create RFC 5322 compliant email format (EML)
+            const date = new Date().toUTCString();
+            const boundary = "----=_NextPart_" + Math.random().toString(36).substring(2);
+            const plainTextContent = tinymce.get('email-content').getContent({format: 'text'}) || '';
+            
+            let emlContent = `Date: ${date}
+From: ${template.from || 'user@example.com'}
+To: ${template.to || ''}
+Cc: ${template.cc || ''}
+Subject: ${template.subject || '(No Subject)'}
+Thread-Topic: ${template.subject || '(No Subject)'}
+Thread-Index: ${Math.random().toString(36).substring(2)}==
+X-MS-Has-Attach: ${template.hasImages ? 'yes' : 'no'}
+Content-Language: ${template.language || 'en-US'}
+X-Template-ID: ${template.templateId}
+X-Template-Category: ${template.category || ''}
+X-Template-Name: ${template.name || ''}
+X-Template-Language: ${template.language || 'en'}
+X-Template-Status: ${template.status || 'draft'}
+Content-Type: multipart/alternative;
+\tboundary="${boundary}"
+MIME-Version: 1.0
+
+--${boundary}
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+${plainTextContent}
+
+--${boundary}
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+${template.content || ''}
+
+--${boundary}--
+`;
+            
+            // Create a Blob with the content
+            const blob = new Blob([emlContent], { type: 'message/rfc822' });
+            const url = URL.createObjectURL(blob);
+            
+            // Create a link to download
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${template.name || 'email-template'}.emltpl`;
+            link.click();
+            
+            // Clean up
+            URL.revokeObjectURL(url);
+        }
+        
+        // Handle merge field insertion
+        function setupMergeFields() {
+            const mergeTags = document.querySelectorAll('.merge-tag');
+            
+            mergeTags.forEach(tag => {
+                tag.addEventListener('click', () => {
+                    const field = tag.dataset.field;
+                    const editor = tinymce.get('email-content');
+                    
+                    if (editor) {
+                        editor.execCommand('mceInsertContent', false, field);
+                    }
+                });
+            });
+        }
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            // New template button
+            newTemplateBtn.addEventListener('click', createNewTemplate);
+            
+            // Save button
+            saveBtn.addEventListener('click', saveCurrentTemplate);
+            
+            // Delete button
+            deleteBtn.addEventListener('click', deleteCurrentTemplate);
+            
+            // Export button
+            exportBtn.addEventListener('click', exportTemplates);
+            
+            // Import button
+            importBtn.addEventListener('click', importTemplates);
+            
+            // Export as MSG
+            exportMsgBtn.addEventListener('click', exportAsMsg);
+            
+            // Preview buttons
+            previewBtn.addEventListener('click', enterPreviewMode);
+            exitPreviewBtn.addEventListener('click', exitPreviewMode);
+            
+            // Image upload buttons
+            if (insertImageBtn) {
+                insertImageBtn.addEventListener('click', handleImageUpload);
+            }
+            
+            if (insertToolbarImageBtn) {
+                insertToolbarImageBtn.addEventListener('click', handleImageUpload);
+            }
+            
+            // Form field change events for auto-save
+            const formFields = [nameInput, categorySelect, statusSelect, languageSelect, 
+                               emailSubject, emailTo, emailCC];
+            formFields.forEach(field => {
+                field.addEventListener('input', scheduleAutoSave);
+                field.addEventListener('change', scheduleAutoSave);
+            });
+            
+            // Search
+            searchInput.addEventListener('input', (e) => {
+                renderTemplatesList(e.target.value);
+            });
+            
+            // Setup merge fields
+            setupMergeFields();
+        }
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTemplates();
+            setupEventListeners();
+            
+            // Wait for TinyMCE to initialize before allowing interactions
+            tinymce.on('AddEditor', function(e) {
+                e.editor.on('init', function() {
+                    console.log('TinyMCE initialized');
+                });
+            });
+        });
