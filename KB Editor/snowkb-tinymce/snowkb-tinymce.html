@@ -528,16 +528,20 @@
                 alert('No articles to export');
                 return;
             }
-            
+
+
             const dataStr = JSON.stringify(articles, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportName = `servicenow-kb-articles-${new Date().toISOString().slice(0,10)}`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportName + '.json');
-            linkElement.click();
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `servicenow-kb-articles-${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
         }
         
         // Import articles from JSON file
