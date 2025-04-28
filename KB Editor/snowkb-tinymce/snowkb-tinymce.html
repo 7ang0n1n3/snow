@@ -256,10 +256,6 @@
                                 <label for="article-category">Category</label>
                                 <select id="article-category">
                                     <option value="">-- Select Category --</option>
-                                    <option value="hardware">Hardware</option>
-                                    <option value="software">Software</option>
-                                    <option value="network">Network</option>
-                                    <option value="security">Security</option>
                                     <option value="procedures">Procedures</option>
                                     <option value="policies">Policies</option>
                                     <option value="troubleshooting">Troubleshooting</option>
@@ -297,14 +293,25 @@
             width: 1000,
             menubar: true,
             plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'help', 'accordion', 'wordcount'
+                'insertdatetime', 'table', 'help', 'accordion', 'wordcount'
             ],
-            toolbar: 'undo redo | blocks | ' +
-                'bold italic backcolor | alignleft aligncenter ' +
-                'alignright alignjustify | bullist numlist outdent indent | ' +
-                'removeformat | help',
+            menubar: 'edit insert format tools table help',
+            menu: {
+                file: {
+                    title: 'View',
+                    items: 'preview source code fullscreen'
+                },
+                tools: {
+                    title: 'Tools',
+                    items: 'preview source code visualblocks visualaid wordcount'
+                }
+
+            },
+            toolbar: 'bold italic underline blocks  fontfamily | ' +
+                'fontsize forecolor backcolor | alignleft aligncenter ' +
+                'alignright alignjustify \n bullist numlist outdent indent',
             content_style: 'body { font-family:Arial,sans-serif; font-size:16px }',
             setup: function(editor) {
                 editor.on('Change', function() {
