@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="application-name" content="ServiceNow KB Offline Editor">
-    <meta name="version" content="2.0">
+    <meta name="version" content="2.1">
     <meta name="description" content="Offline ServiceNow KB editor, using TinyMCE">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ServiceNow KB Offline Editor</title>
@@ -295,7 +295,7 @@
             plugins: [
                 'advlist', 'autolink', 'lists', 'link', 'charmap', 'preview',
                 'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'table', 'help', 'accordion', 'wordcount'
+                'insertdatetime', 'table', 'help', 'accordion', 'wordcount','fullscreen'
             ],
             menubar: 'edit insert format tools table help',
             menu: {
@@ -305,7 +305,7 @@
                 },
                 tools: {
                     title: 'Tools',
-                    items: 'preview source code visualblocks visualaid wordcount'
+                    items: 'preview fullscreen source code visualblocks visualaid wordcount'
                 }
 
             },
